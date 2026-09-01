@@ -4,10 +4,47 @@
 
 核心目标不是“提醒 Agent 写文档”，而是把需求、架构、API、数据库、测试、发布和事故文档变成可验证的工作流门禁。
 
+## 安装方式
+
+本项目不发布至 PyPI，推荐通过以下三种方式进行安装：
+
+### 1. 远程一键安装（通用 Linux / macOS，推荐）
+
+自动创建独立隔离环境并安装至 `~/.local/bin/cabbage`（无需 root 权限，不污染系统 Python 环境）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/devcxl/cabbage/master/scripts/install.sh | bash
+```
+
+> **卸载方式**：
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/devcxl/cabbage/master/scripts/install.sh | bash -s -- --uninstall
+> ```
+
+### 2. Arch Linux 原生包（AUR / PKGBUILD）
+
+```bash
+# 从仓库 PKGBUILD 本地构建并安装
+cd packaging/aur && makepkg -si
+
+# 或通过 AUR helper 安装
+yay -S cabbage-git
+```
+
+### 3. Debian / Ubuntu (.deb 包)
+
+直接从 [GitHub Releases](https://github.com/devcxl/cabbage/releases) 页面下载最新 `.deb` 安装包：
+
+```bash
+sudo dpkg -i cabbage_*_all.deb
+# 如缺少依赖可执行：sudo apt-get install -f
+```
+
+---
+
 ## 快速开始
 
 ```bash
-./project-docs-management/scripts/install.sh
 cd your-project
 cabbage init
 cabbage new feature add-user-login
