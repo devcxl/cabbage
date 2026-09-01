@@ -1,148 +1,339 @@
 ---
 name: project-docs-management
-description: Enforce project documentation lifecycle, change workflows, architecture decisions, validation, VuePress preview, Mermaid diagrams, and CI gates using cabbage.
+description: Enforce end-to-end project documentation lifecycle, change workflows, architecture decisions, validation, VitePress preview, Mermaid diagrams, and CI gates using cabbage.
 ---
 
-# Cabbage Skill
+# Cabbage Skill: Project Documentation Lifecycle & Workflow Gates
 
-## When to use
+## 1. When to Use
 
-Use this Skill whenever work changes product behavior, architecture, APIs, database schema, security boundaries, deployment, operations, tests, or production behavior.
+Use this Skill whenever performing any of the following software engineering activities:
 
-## Mandatory operating rule
+- Developing new business capabilities or user-facing features (`feature`).
+- Evolving system topology, runtime architecture, boundaries, or major tech stacks (`architecture`).
+- Resolving defects or regressions (`bugfix`).
+- Applying urgent production patches (`hotfix`).
+- Performing internal code structural refactoring (`refactor`).
+- Modifying database schemas, data storage, or runtime platforms (`migration`).
+- Integrating with third-party APIs, webhooks, or external platforms (`integration`).
+- Responding to production incidents and conducting postmortems (`incident`).
+- Onboarding existing project documentation into standard lifecycle governance (`adoption`).
+- Previewing, validating, or building the project documentation site (`docs`).
 
-Before implementation work:
+---
 
-```bash
-cabbage status <change> --json
-cabbage next <change> --json
-cabbage gate <change> implementation
+## 2. Core Philosophy & Anti-Rot Rules
+
+1. **Single Source of Truth**: Every architectural or product fact lives in exactly one canonical document; all other docs link to it.
+2. **Current-State vs. Decision History**:
+   - Current-state docs (`docs/01-product/`, `docs/03-architecture/system-design/`, `docs/05-api/`, `docs/13-operations/`) describe the system as it exists now and are updated in-place.
+   - Decision-history docs (`ADR`, `RFC`, `postmortem`) are immutable historical records. Never rewrite history; explicitly supersede older decisions with new ones.
+3. **Content Signatures & Cascading Invalidation**: Verifying an artifact computes a cryptographic SHA-256 signature of its content, workflow schema, and upstream dependencies. Modifying an upstream artifact automatically invalidates downstream stages to `stale`.
+4. **Zero Placeholder & Strict Link Integrity**: Verification rejects any residual `TODO`, `TBD`, `FIXME`, or default scaffold prompts, as well as broken local relative links.
+5. **Atomic PR Delivery**: Code changes and their associated documentation changes must be committed and delivered in the same Pull Request.
+6. **Automated Specification Synchronization**: Running `cabbage sync` or `cabbage archive` automatically extracts verified specifications into the persistent `docs/` hierarchy.
+7. **No Final-v2-Copy Anti-Patterns**: Avoid filenames like `spec-v2-final.md`. Maintain stable paths and let Git manage version history.
+
+---
+
+## 3. Comprehensive Reference Index & Navigation
+
+Before or during execution, consult the following dedicated reference guides in `references/`:
+
+| Reference Document | Scope & Key Topics | When to Consult |
+|---|---|---|
+| [`references/cli.md`](references/cli.md) | Complete CLI syntax, subcommands, flags, exit codes, and JSON outputs | Executing or debugging any `cabbage` command |
+| [`references/decision-tree.md`](references/decision-tree.md) | 8 change types classification tree, impact matrix, conditional activations | Classifying a new task or configuring impact flags |
+| [`references/lifecycle.md`](references/lifecycle.md) | Change states (`active` / `archived`), stage state machine, SHA-256 signatures, stale triggers | Understanding state transitions or resolving gate blocks |
+| [`references/directory-structure.md`](references/directory-structure.md) | Standard 22-category `docs/` tree layout and placement rules | Locating, creating, or moving long-lived documentation |
+| [`references/document-types.md`](references/document-types.md) | Specifications, required headings, and lifecycle rules for all 12 artifact types | Writing PRD, Tech Spec, ADR, RFC, API Design, etc. |
+| [`references/adoption.md`](references/adoption.md) | 7-phase flow for scanning, classifying, and migrating existing repository docs | Onboarding pre-existing project documentation |
+| [`references/validation.md`](references/validation.md) | Automated validation rules, structural checks, and manual peer review checklist | Troubleshooting `verify`/`validate` or reviewing PRs |
+| [`references/linking-rules.md`](references/linking-rules.md) | Relative path resolution, stable heading anchors, cross-referencing rules | Writing Markdown links between files |
+| [`references/naming-conventions.md`](references/naming-conventions.md) | Kebab-case naming, ADR/RFC numbering formats (`ADR-0001-...`), anti-patterns | Naming change workspaces, ADRs, RFCs, and files |
+| [`references/diagrams.md`](references/diagrams.md) | Mermaid diagram syntax templates (Flowchart, Sequence, State, ER, Class, Git) | Creating or reviewing architectural diagrams |
+| [`references/documentation-site.md`](references/documentation-site.md) | VitePress 1.6+ configuration, Mermaid integration, local dev preview, static build | Previewing or compiling the `docs/` site |
+| [`references/enforcement.md`](references/enforcement.md) | CI gate configuration, branch protection, CODEOWNERS, agent security boundary | Setting up CI/CD pipelines or permission policies |
+| [`references/ownership.md`](references/ownership.md) | Code-to-documentation parity, frontmatter metadata, team ownership boundaries | Assigning doc maintainers and PR reviewers |
+
+---
+
+## 4. Standard Operating Procedures (SOPs)
+
+### SOP 1: Feature & Capability Delivery Flow
+
+Follow this end-to-end workflow when implementing a new feature or business capability.
+
+```mermaid
+flowchart TD
+    A["1. cabbage doctor & new feature <id>"] --> B["2. cabbage impact <id> --set ..."]
+    B --> C["3. Draft PRD & Tech Spec & Tasks"]
+    C --> D["4. cabbage verify <id> <stage>"]
+    D --> E{"5. cabbage gate <id> implementation"}
+    E -- Blocked --> C
+    E -- Allowed --> F["6. Implement Code & Mark Tasks Done [x]"]
+    F --> G["7. Draft & Verify test-plan & release-plan"]
+    G --> H["8. cabbage validate <id> & cabbage sync <id>"]
+    H --> I{"9. cabbage gate <id> merge & cabbage ci"}
+    I -- Blocked --> F
+    I -- Allowed --> J["10. Merge PR & cabbage archive <id>"]
 ```
 
-If the gate fails, do not begin implementation. Create or update the required artifact, validate it, then run `cabbage verify`.
-
-Before merge:
+#### Step 1: Initialize Workspace & Environment Check
+Check environment prerequisites and initialize the change workspace:
 
 ```bash
-cabbage validate <change>
-cabbage sync <change>
-cabbage gate <change> merge
+cabbage doctor
+cabbage new feature <change-id>
+```
+- *Reference: [`references/naming-conventions.md`](references/naming-conventions.md) for `<change-id>` naming.*
+
+#### Step 2: Impact Analysis & Stage Activation
+Evaluate affected technical domains and activate conditional stages:
+
+```bash
+cabbage impact <change-id>
+cabbage impact <change-id> --set api=true --set database=true --set security=true
+```
+- *Reference: [`references/decision-tree.md`](references/decision-tree.md) for impact field mappings.*
+
+#### Step 3: Author Artifacts & Stage Verification
+Inspect next ready stages, fill in the generated templates in `.cabbage/changes/<change-id>/`, remove all placeholders, and verify each stage:
+
+```bash
+cabbage next <change-id>
+# Edit .cabbage/changes/<change-id>/prd.md
+cabbage verify <change-id> prd
+
+# Edit tech-spec.md, tasks.md, api-design.md, database-design.md, etc.
+cabbage verify <change-id> tech-spec
+cabbage verify <change-id> tasks
+```
+- *Reference: [`references/document-types.md`](references/document-types.md) for required headings and sections.*  
+- *Reference: [`references/diagrams.md`](references/diagrams.md) for Mermaid architectural diagram templates.*
+
+#### Step 4: Pre-Implementation Gate Guard
+Before writing source code, confirm the implementation gate passes:
+
+```bash
+cabbage gate <change-id> implementation
+```
+*If this command exits with non-zero or output `BLOCKED`, resolve missing or stale stages before touching code.*
+
+#### Step 5: Implementation & Checklist Maintenance
+Write source code, unit tests, and integration tests. As tasks are completed, update `.cabbage/changes/<change-id>/tasks.md` from `- [ ]` to `- [x]`.
+
+#### Step 6: Post-Implementation Verification & Plans
+Complete and verify `test-plan.md` and `release-plan.md`:
+
+```bash
+cabbage verify <change-id> tasks
+cabbage verify <change-id> test-plan
+cabbage verify <change-id> release-plan
+```
+
+#### Step 7: Full Validation & Specification Sync
+Validate all change constraints and synchronize specifications into `docs/`:
+
+```bash
+cabbage validate <change-id>
+cabbage sync <change-id>
 cabbage docs build
 ```
+- *Reference: [`references/directory-structure.md`](references/directory-structure.md) for synced target paths.*  
+- *Reference: [`references/documentation-site.md`](references/documentation-site.md) for VitePress build details.*
 
-CI should run:
+#### Step 8: Merge Gate & CI Verification
+Ensure all merge gate criteria are satisfied:
 
 ```bash
-cabbage ci --base <merge-base>
+cabbage gate <change-id> merge
+cabbage ci --base origin/main
 ```
 
-## Change types
-
-- `feature`: user-visible or business capability
-- `architecture`: system boundary, topology, runtime, storage, major dependency or communication model change
-- `bugfix`: non-incident defect correction
-- `hotfix`: urgent production correction
-- `refactor`: internal structural change without intended product behavior change
-- `migration`: database, data, platform or runtime migration
-- `integration`: third-party/API/platform integration
-- `incident`: production incident and corrective work
-
-## Documentation model
-
-Current-state documents describe the system as it exists now. Update them in place. Git stores fine-grained history.
-
-Decision-history documents (`RFC`, `ADR`, postmortems) are immutable historical records. Supersede them; do not rewrite the decision history.
-
-Avoid `final-v2-final.md`. Use stable paths and Git history.
-
-## Change impact rule
-
-Every change must explicitly evaluate:
-
-- product / PRD
-- architecture
-- API
-- database
-- security
-- testing
-- deployment
-- operations
-- data
-- performance
-
-Use:
+#### Step 9: PR Merge & Archival
+After merging the PR into the target branch:
 
 ```bash
-cabbage impact <change>
-cabbage impact <change> --set architecture=true --set api=true
+cabbage archive <change-id>
 ```
+- *Reference: [`references/lifecycle.md`](references/lifecycle.md) for archival mechanics.*
 
-Changing impact synchronizes `impact.md`; that makes dependent completed stages stale, while conditional stages are activated or skipped from the new impact flags.
+---
 
-## Anti-rot rules
+### SOP 2: Existing Project Documentation Adoption Flow
 
-1. One source of truth per fact; other docs link to it.
-2. API/schema/config/version information should be generated where possible.
-3. Code and affected docs belong in the same PR.
-4. Verifying an artifact records its content/dependency signature.
-5. Editing an upstream artifact makes dependent completed artifacts stale.
-6. Architecture decisions use ADR; proposals use RFC/tech-spec.
-7. Obsolete current-state docs are updated or removed; historical decisions are superseded/archived.
-8. Module ownership includes documentation ownership.
-9. CI validates links, frontmatter, required headings, Mermaid fence integrity, workflow state, and docs build.
-10. `cabbage sync` and `cabbage archive` automatically propagate verified change specs into `docs/` current-state documentation.
-11. A code-changing PR without a bound change fails `cabbage ci` when strict mode is enabled.
-
-## Mermaid
-
-Prefer Mermaid for diagrams that should be reviewed with code:
-
-- `flowchart` for flows
-- `sequenceDiagram` for call chains
-- `stateDiagram-v2` for state machines
-- `classDiagram` for domain structure
-- `erDiagram` for data relationships
-- `gitGraph` for release/branch flows
-
-Keep the Mermaid source in Markdown. Do not commit PNG screenshots as the primary architecture source when Mermaid is sufficient.
-
-## VitePress
-
-`cabbage init` scaffolds a standalone `docs/` VitePress site with Mermaid support.
+Follow this procedure when onboarding an existing repository with pre-existing documentation.
 
 ```bash
-cabbage docs install
-cabbage docs dev
+# 1. Scaffold Cabbage base without touching existing docs
+cabbage init
+
+# 2. Inventory all existing markdown documentation
+cabbage adopt
+
+# 3. Apply suggested migrations or manually resolve review rows
+cabbage adopt --apply
+
+# 4. Create adoption baseline change record
+cabbage new feature adopt-existing-docs
+
+# 5. Verify links and site build
+cabbage validate adopt-existing-docs
 cabbage docs build
+
+# 6. Merge baseline PR and enable CI enforcement
 ```
+- *Reference: [`references/adoption.md`](references/adoption.md) for the detailed 7-phase adoption guide.*  
+- *Reference: [`references/enforcement.md`](references/enforcement.md) for branch protection and CI setup.*
 
-## Document placement
+---
 
-Read `references/directory-structure.md` and `references/document-types.md` before creating a new long-lived document.
+### SOP 3: Architecture Change & ADR/RFC Decision Flow
 
-## Adopting an existing project
+Follow this procedure when introducing systemic architectural changes, new design patterns, or major dependencies.
 
-If the project already has documentation outside the standard tree, read `references/adoption.md` and run `cabbage adopt` first. The command inventories existing documents and proposes actions (`keep`/`migrate`/`import`/`review`) without moving anything; complete the adoption as a change record before starting feature work.
+1. **Create Architecture Workspace**:
+   ```bash
+   cabbage new architecture <change-id>
+   ```
+2. **Draft Decision Records & Proposals**:
+   - Write `adr.md` following standard Context-Decision-Consequences format.
+   - If broad cross-team discussion is required, draft `rfc.md`.
+   - Embed Mermaid topology and sequence diagrams directly in the text.
+3. **Verify Decision Artifacts**:
+   ```bash
+   cabbage verify <change-id> adr
+   cabbage verify <change-id> tech-spec
+   cabbage gate <change-id> implementation
+   ```
+4. **Sync to Persistent Architecture Tree**:
+   ```bash
+   cabbage sync <change-id>
+   ```
+   *This automatically registers `ADR-XXXX` under `docs/03-architecture/adr/`.*
+- *Reference: [`references/document-types.md`](references/document-types.md) and [`references/naming-conventions.md`](references/naming-conventions.md).*
 
-## Workflow selection
+---
 
-Read `references/decision-tree.md`. Do not create every document for every change; activate conditional artifacts from impact analysis.
+### SOP 4: Bugfix & Hotfix Flow
 
-## Verification semantics
+Follow this streamlined procedure for defect corrections.
 
-`cabbage verify <change> <stage>` succeeds only if:
+1. **Create Bugfix / Hotfix Workspace**:
+   ```bash
+   cabbage new bugfix <change-id>
+   # or for urgent production defects:
+   cabbage new hotfix <change-id>
+   ```
+2. **Minimal Impact Assessment**:
+   ```bash
+   cabbage impact <change-id>
+   ```
+   *Only enable fields directly affected by the bugfix (e.g. `testing=true`).*
+3. **Verify Root Cause & Tasks**:
+   - Document root cause analysis and reproduction steps in `tasks.md`.
+   - Implement the fix and regression test.
+   - Mark checklist items as completed `- [x]`.
+4. **Verify & Merge**:
+   ```bash
+   cabbage verify <change-id> tasks
+   cabbage gate <change-id> merge
+   ```
 
-- dependencies are complete and current;
-- artifact exists;
-- frontmatter identifies the correct change and stage;
-- required headings exist;
-- no `TODO`, `TBD`, `FIXME`, or `CABBAGE` placeholder prompts remain;
-- local Markdown links resolve;
-- Mermaid fences are balanced;
-- implementation task lists contain no unchecked tasks when verifying implementation.
+---
 
-Never manually mark `.cabbage/changes/*/state.json` as complete. Treat it as CLI-owned metadata.
+### SOP 5: Database & Data Migration Flow
 
-## Enforcement
+Follow this procedure when adding or modifying database schemas, tables, indexes, or running data backfills.
 
-Read `references/enforcement.md`. Repository branch protection and human review of policy files are required if the Agent has write access to the repository.
+1. **Create Migration Workspace & Set Impact**:
+   ```bash
+   cabbage new migration <change-id>
+   cabbage impact <change-id> --set database=true --set deployment=true
+   ```
+2. **Author Database Design Artifact (`database-design.md`)**:
+   - Define exact DDL / schema modifications.
+   - Document forward migration steps and rollback procedures.
+   - Include ER diagrams using Mermaid syntax.
+   - Evaluate locking, zero-downtime constraints, and data safety.
+3. **Verify & Execute Gate**:
+   ```bash
+   cabbage verify <change-id> database-design
+   cabbage verify <change-id> tasks
+   cabbage gate <change-id> implementation
+   ```
+4. **Sync & Merge**:
+   ```bash
+   cabbage sync <change-id>
+   cabbage gate <change-id> merge
+   ```
+
+---
+
+### SOP 6: Production Incident & Postmortem Flow
+
+Follow this procedure to document live service outages, root cause analysis, and preventative actions.
+
+1. **Create Incident Workspace**:
+   ```bash
+   cabbage new incident <incident-id>
+   ```
+2. **Document Incident Timeline & Postmortem**:
+   - Record exact UTC timeline in `incident.md`.
+   - Conduct 5-Why root cause analysis in `postmortem.md`.
+   - List actionable preventative tasks with assigned owners.
+3. **Verify & Archive into Incident History**:
+   ```bash
+   cabbage verify <incident-id> incident
+   cabbage verify <incident-id> postmortem
+   cabbage sync <incident-id>
+   cabbage archive <incident-id>
+   ```
+   *Archived records permanently reside in `docs/15-incidents/`.*
+
+---
+
+## 5. Command Quick Reference
+
+```bash
+# Environment & Diagnosis
+cabbage doctor                                 # Diagnostic check
+cabbage init                                   # Greenfield init
+cabbage adopt [--apply]                        # Adopt existing docs
+
+# Workspace & Stages
+cabbage new <type> <change-id>                 # Create change workspace
+cabbage status [change-id]                     # View stage progress
+cabbage next <change-id>                       # View ready/blocked stages
+cabbage impact <change-id> [--set k=v]         # Inspect or update impact matrix
+cabbage discard <change-id>                    # Remove active change
+
+# Verification & Gates
+cabbage verify <change-id> <stage>             # Verify single artifact
+cabbage validate [<change-id> | --all]         # Validate markdown & links
+cabbage gate <change-id> implementation|merge  # Evaluate lifecycle gate
+
+# Sync, Archive & CI
+cabbage sync <change-id>                       # Extract specs into docs/
+cabbage archive <change-id>                    # Archive completed change
+cabbage ci --base <git-ref>                    # CI diff & gate runner
+
+# Documentation Site
+cabbage docs install|dev|build                 # VitePress lifecycle
+```
+- *Reference: [`references/cli.md`](references/cli.md) for full parameter specifications and exit codes.*
+
+---
+
+## 6. Troubleshooting & Common Failure Modes
+
+| Error / Failure | Root Cause | Resolution |
+|---|---|---|
+| `verify: contains placeholder: ...` | File contains `TODO`, `TBD`, `FIXME`, or default template prompt text | Replace placeholder text with real content. |
+| `verify: unchecked tasks remain` | `tasks.md` contains `- [ ]` unchecked checklist items | Mark completed items as `- [x]` after implementation. |
+| `gate implementation: BLOCKED` | Required pre-implementation artifacts are unverified (`pending`) or `stale` | Run `cabbage next <id>` and verify unready stages with `cabbage verify`. |
+| `stage status: stale` | Upstream artifact, workflow definition, or impact flag was modified | Review the artifact against updated upstream dependencies, then re-run `cabbage verify <id> <stage>`. |
+| `validate: broken link ...` | A relative link in Markdown references a nonexistent file or anchor | Check relative path depth or update heading anchor slug. See [`references/linking-rules.md`](references/linking-rules.md). |
+| `docs build: failed` | VitePress dead link check or unclosed code fence | Run `cabbage validate --all` to pinpoint invalid paths. |
+| `ci: code modified without change` | Strict mode detected source code modifications not covered by an active change | Create or bind an active change via `cabbage new <type> <id>`. |
