@@ -6,6 +6,11 @@ const base = (process.env.BASE_URL || (process.env.GITHUB_REPOSITORY ? `/${proce
 export default withMermaid(
   defineConfig({
     base,
+    rewrites: {
+      'README.md': 'index.md',
+      ':pkg/README.md': ':pkg/index.md',
+      ':pkg/:sub/README.md': ':pkg/:sub/index.md',
+    },
     lang: 'zh-CN',
     title: 'Cabbage Documentation',
     description: 'Project documentation managed by Cabbage',
