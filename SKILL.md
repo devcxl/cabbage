@@ -52,7 +52,7 @@ Before or during execution, consult the following dedicated reference guides in 
 | [`references/decision-tree.md`](references/decision-tree.md) | 10 scenario archetypes, classification tree, impact matrix, conditional activations | Classifying a new task or configuring impact flags |
 | [`references/lifecycle.md`](references/lifecycle.md) | Change states (`active` / `archived`), stage state machine, SHA-256 signatures, stale triggers | Understanding state transitions or resolving gate blocks |
 | [`references/directory-structure.md`](references/directory-structure.md) | Standard 22-category `docs/` tree layout and placement rules | Locating, creating, or moving long-lived documentation |
-| [`references/document-types.md`](references/document-types.md) | Specifications, Testing Decisions, vertical task slices, and lifecycle rules for 12 artifact types | Writing PRD, Tech Spec, ADR, RFC, API Design, etc. |
+| [`references/document-types.md`](references/document-types.md) | Specifications, Testing Decisions, DAG vertical task slices, and lifecycle rules for 12 artifact types | Writing PRD, Tech Spec, ADR, RFC, API Design, Task DAGs, etc. |
 | [`references/adoption.md`](references/adoption.md) | 7-phase flow for scanning, classifying, and migrating existing repository docs | Onboarding pre-existing project documentation |
 | [`references/validation.md`](references/validation.md) | Automated validation rules, TDD protocol, and Dual-Axis Review framework | Troubleshooting `verify`/`validate` or reviewing PRs |
 | [`references/linking-rules.md`](references/linking-rules.md) | Relative path resolution, stable heading anchors, cross-referencing rules | Writing Markdown links between files |
@@ -73,12 +73,12 @@ Follow this end-to-end workflow when implementing a new feature or business capa
 ```mermaid
 flowchart TD
     A["1. cabbage doctor & new feature <id>"] --> B["2. cabbage impact <id> --set ..."]
-    B --> C["3. Draft PRD, Tech Spec (Testing Decisions) & Tasks"]
+    B --> C["3. Draft PRD, Tech Spec & Task DAG (Mermaid)"]
     C --> D["4. cabbage verify <id> <stage>"]
     D --> E{"5. cabbage gate <id> implementation"}
     E -- Blocked --> C
-    E -- Allowed --> F["6. TDD Implementation (RED->GREEN) & Mark Tasks Done [x]"]
-    F --> G["7. Draft & Verify test-plan & release-plan"]
+    E -- Allowed --> F["6. Parallel/Sequential TDD Execution (RED->GREEN)"]
+    F --> G["7. Mark Tasks Done [x] & Verify test-plan/release-plan"]
     G --> H["8. cabbage validate <id> & cabbage sync <id>"]
     H --> I{"9. Dual-Axis Review & cabbage gate <id> merge"}
     I -- Blocked --> F
@@ -103,7 +103,7 @@ cabbage impact <change-id> --set api=true --set database=true --set security=tru
 ```
 - *Reference: [`references/decision-tree.md`](references/decision-tree.md) for impact field mappings.*
 
-#### Step 3: Author Artifacts & Stage Verification
+#### Step 3: Author Artifacts, DAG Task Decomposition & Stage Verification
 Inspect next ready stages, fill in the generated templates in `.cabbage/changes/<change-id>/`, remove all placeholders, and verify each stage:
 
 ```bash
@@ -111,12 +111,19 @@ cabbage next <change-id>
 # Edit .cabbage/changes/<change-id>/prd.md
 cabbage verify <change-id> prd
 
-# Edit tech-spec.md (must include ## Testing Decisions), tasks.md (vertical slices), etc.
+# Edit tech-spec.md (must include ## Testing Decisions)
 cabbage verify <change-id> tech-spec
+
+# Edit tasks.md (must define Task DAG in Mermaid, vertical slices & parallel groups)
 cabbage verify <change-id> tasks
 ```
-- *Reference: [`references/document-types.md`](references/document-types.md) for Testing Decisions and vertical task slice standards.*  
-- *Reference: [`references/diagrams.md`](references/diagrams.md) for Mermaid architectural diagram templates.*
+- **Task DAG Principles**:
+  - Model tasks as a Directed Acyclic Graph (DAG) with Mermaid `flowchart TD`.
+  - Slice tasks vertically (end-to-end observable behavior), avoiding horizontal tech layers.
+  - Declare explicit `Blocked By` dependencies (true blocking only; no circular dependencies).
+  - Identify parallelizable task groups that can be assigned concurrently to isolated developer threads/subagents in fresh contexts.
+- *Reference: [`references/document-types.md`](references/document-types.md) for Testing Decisions and DAG vertical task slice standards.*  
+- *Reference: [`references/diagrams.md`](references/diagrams.md) for Mermaid architectural and DAG diagram templates.*
 
 #### Step 4: Pre-Implementation Gate Guard
 Before writing source code, confirm the implementation gate passes:
@@ -126,12 +133,15 @@ cabbage gate <change-id> implementation
 ```
 *If this command exits with non-zero or outputs `BLOCKED`, resolve missing or stale stages before touching code.*
 
-#### Step 5: TDD Implementation & Checklist Maintenance
-Follow behavior-oriented TDD (`RED` -> `GREEN` -> `refactor`) across public Test Seams:
-1. Write a failing behavioral test against the public Seam.
-2. Implement minimal code to turn the test green.
-3. Update `.cabbage/changes/<change-id>/tasks.md` from `- [ ]` to `- [x]`.
-- *Reference: [`references/validation.md`](references/validation.md) for TDD behavioral protocol.*
+#### Step 5: TDD Implementation & Parallel Execution Protocol
+Execute tasks according to the DAG topological order:
+1. **Parallel Execution**: Independent branches in the DAG can be executed concurrently by subagents or parallel worker threads without cross-contamination.
+2. **Behavior-Oriented TDD Cycle**:
+   - Write a failing behavioral test against the public Test Seam agreed upon in `tech-spec.md` (RED).
+   - Implement the minimal code needed to pass the test (GREEN).
+   - Refactor cleanly while preserving behavior (REFACTOR).
+3. **Checklist Maintenance**: Update `.cabbage/changes/<change-id>/tasks.md` from `- [ ]` to `- [x]` as each vertical slice is verified.
+- *Reference: [`references/validation.md`](references/validation.md) for TDD behavioral protocol and Dual-Axis Review.*
 
 #### Step 6: Post-Implementation Verification & Plans
 Complete and verify `test-plan.md` and `release-plan.md`:
