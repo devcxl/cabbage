@@ -1,57 +1,63 @@
 # Workflow & Change Type Decision Tree
 
-This guide defines how to classify changes and activate conditional artifacts in Cabbage.
+This guide defines how to classify changes, dispatch appropriate workflow paths, and activate conditional artifacts in Cabbage.
 
-## 1. Classification Decision Tree
+---
+
+## 1. Scenario Dispatch Matrix (Phase 0)
+
+Before creating a change workspace, evaluate the input against the 10 scenario archetypes:
+
+| Scenario Archetype | Key Characteristics | Cabbage Change Type | Execution Path | Key Actions & Exit Criteria |
+|---|---|---|---|---|
+| **New Capability / Feature** | User-visible or new business capabilities | `feature` | Full Lifecycle | PRD -> Tech Spec -> Tasks -> Implementation -> Dual-Axis Review -> Merge |
+| **Bug / Regression** | Defect in merged code or non-outage regression | `bugfix` | Lightweight Corrective | Reproduce -> Failing Test (RED) -> Minimal Fix (GREEN) -> Regression Verify |
+| **Production Incident / Hotfix** | P0/P1 live outage or urgent production patch | `hotfix` or `incident` | Fast-Track Patch | Patch from release tag -> Minimal Fix -> Release PR -> Rollback plan |
+| **Business Adjustment** | Minor adjustments to existing behavior/fields | `feature` or `bugfix` | Change Management | Impact analysis -> Backward compatibility check -> Update spec -> Implement |
+| **Refactoring** | Internal restructuring without behavior changes | `refactor` | Behavior-Preserving | Test safety net -> Stepwise refactor -> Differential/snapshot parity check |
+| **Tech Debt Cleanup** | Dead code, obsolete configs, unused assets | `refactor` | Behavior-Preserving Removal | Inventory unused assets -> Verify consumer references -> Delete -> Full regression |
+| **Infrastructure Change** | CI/CD, build tools, package dependencies | `integration` or `refactor` | CI-as-Acceptance | Small incremental steps -> Push to CI -> Verify build pipeline & regression |
+| **Documentation Update** | Standalone docs updates, runbooks, guides | `feature` or direct docs | Docs-as-Code | Update canonical docs -> Terminology check -> Docs build verify (`cabbage docs build`) |
+| **Rollback & Recovery** | Failed deployment, critical release issue | `hotfix` | Controlled Rollback | Revert PR -> Create root-cause corrective change -> Clean worktrees |
+| **Technical Research** | Tech evaluation, spike, architectural study | `architecture` | Evidence-Driven | Frame hypothesis -> Conduct research/POC -> Document findings & trade-offs |
+
+---
+
+## 2. Classification Decision Tree
 
 ```text
 Change Intake
 │
 ├── Adds new business capability or user-visible feature?
-│   └── -> Type: `feature`
+│   └── -> Type: `feature` (Full lifecycle)
 │
 ├── Alters system boundaries, runtime topology, major tech stack, or distributed protocols?
-│   └── -> Type: `architecture`
+│   └── -> Type: `architecture` (Tech Spec + ADR + Topology)
 │
 ├── Corrects a non-production-outage functional defect or regression?
-│   └── -> -> Type: `bugfix`
+│   └── -> Type: `bugfix` (Lightweight corrective path)
 │
 ├── Urgent production patch requiring rapid hot-patching?
-│   └── -> Type: `hotfix`
+│   └── -> Type: `hotfix` (Fast-track release path)
 │
 ├── Internal structural refactoring without external behavioral changes?
-│   └── -> Type: `refactor`
+│   └── -> Type: `refactor` (Behavior-preserving path)
 │
 ├── Database schema evolution, data backfill, or platform/runtime migration?
-│   └── -> Type: `migration`
+│   └── -> Type: `migration` (Schema + Rollback + Data safety)
 │
 ├── Connecting with third-party APIs, webhooks, or external SaaS platforms?
-│   └── -> Type: `integration`
+│   └── -> Type: `integration` (API Design + Security Review)
 │
 └── Production incident response, post-mortem, and corrective action tracking?
-    └── -> Type: `incident`
+    └── -> Type: `incident` (Timeline + 5-Why Postmortem)
 ```
-
----
-
-## 2. Change Type Overview
-
-| Change Type | Primary Focus | Mandatory Artifacts | Typical Conditional Artifacts |
-|---|---|---|---|
-| `feature` | End-user or business capabilities | `prd`, `impact`, `tasks` | `tech-spec`, `api-design`, `database-design`, `security-review`, `test-plan`, `release-plan` |
-| `architecture` | Structural & systemic topology | `impact`, `tech-spec`, `adr`, `tasks` | `security-review`, `test-plan`, `release-plan` |
-| `bugfix` | Defect resolution & root cause fix | `impact`, `tasks` | `test-plan`, `release-plan` |
-| `hotfix` | Fast-track urgent production patch | `impact`, `tasks` | `release-plan` |
-| `refactor` | Code restructuring without feature change | `impact`, `tech-spec`, `tasks` | `test-plan`, `benchmark` |
-| `migration` | Data model, schema, storage migration | `impact`, `database-design`, `tasks` | `release-plan`, `test-plan` |
-| `integration`| External SaaS, API, protocol adapter | `impact`, `api-design`, `security-review`, `tasks` | `test-plan`, `release-plan` |
-| `incident` | Production failure triage & postmortem | `incident`, `postmortem` | `tasks` (corrective actions) |
 
 ---
 
 ## 3. Impact Analysis Matrix & Conditional Activation
 
-Impact analysis determines which conditional stages are activated. Run:
+Impact analysis determines which conditional stages are activated in active change workflows. Run:
 
 ```bash
 cabbage impact <change-id> --set <field>=true|false
@@ -72,8 +78,8 @@ cabbage impact <change-id> --set <field>=true|false
 
 ---
 
-## 4. Rule of Thumb
+## 4. Operational Principles
 
-1. **When in doubt, run `cabbage impact <change>` first**; let the impact flags guide artifact generation.
-2. **Never create redundant standalone docs**; activate conditional stages in the change workflow.
-3. **Changing impact triggers cascading invalidation**; downstream completed stages will become `stale` and must be re-verified.
+1. **Lightweight Paths for Non-Feature Scenarios**: For bugfixes, tech debt cleanups, or refactoring, avoid heavy PRD ceremonies unless the root cause stems from architectural flaws.
+2. **Never Create Redundant Standalone Docs**: Activate conditional stages within the managed change workflow and sync them to `docs/`.
+3. **Cascading Invalidation Awareness**: Changing impact flags triggers downstream stages to become `stale`. Always inspect ready stages with `cabbage next <change-id>`.
