@@ -14,7 +14,7 @@
 
 ---
 
-📖 **在线文档**：[https://devcxl.github.io/cabbage/](https://devcxl.github.io/cabbage/)
+在线文档：[https://devcxl.github.io/cabbage/](https://devcxl.github.io/cabbage/)
 
 核心目标不是“提醒写文档”，而是把需求（PRD）、影响分析、架构设计（RFC/ADR）、API 规范、数据库设计、测试计划和发布方案变成**可执行、可签名验证、不可篡改的 CI 刚性工作流门禁**。
 
@@ -33,12 +33,12 @@ flowchart LR
 
 ## 核心特性
 
-- 🛡️ **刚性工作流门禁**：在编写代码前强制执行 `gate implementation`，检查 PRD、影响分析与架构设计是否完备；PR 合并前强制执行 `gate merge` 与 `cabbage ci` 门禁。
-- 🔄 **内容签名与防腐化（Anti-Rot）**：每个阶段验证时记录依赖拓扑与内容签名（SHA-256）。一旦上游文档、工作流定义或影响矩阵发生变化，下游已验证阶段自动置为 `stale`。
-- 🚫 **严格占位符与死链拦截**：`verify` 自动校验 Markdown 结构，严格拒绝遗留的 `TODO`、`TBD`、`FIXME`、未勾选任务 `[ ]` 以及失效的本地链接与锚点。
-- 📦 **自动同步与归档沉淀**：执行 `cabbage sync` 或 `cabbage archive` 时，自动将验证通过的变更规范萃取沉淀至 `docs/` 标准文档树，变更历史安全归档至 `.cabbage/archive/`。
-- 🧭 **存量文档无痛采纳（Adoption）**：提供 `cabbage adopt` 自动扫描清点项目存量文档，支持 `--apply` 一键自动归类与迁移。
-- ⚡ **现代化 VitePress 驱动**：开箱集成 VitePress 1.6 + Mermaid 图表，极速 Vite 编译与即时搜索，并通过 GitHub Actions 自动持续部署至 GitHub Pages。
+- **刚性工作流门禁**：在编写代码前强制执行 `gate implementation`，检查 PRD、影响分析与架构设计是否完备；PR 合并前强制执行 `gate merge` 与 `cabbage ci` 门禁。
+- **内容签名与防腐化（Anti-Rot）**：每个阶段验证时记录依赖拓扑与内容签名（SHA-256）。一旦上游文档、工作流定义或影响矩阵发生变化，下游已验证阶段自动置为 `stale`。
+- **严格占位符与死链拦截**：`verify` 自动校验 Markdown 结构，严格拒绝遗留的 `TODO`、`TBD`、`FIXME`、未勾选任务 `[ ]` 以及失效的本地链接与锚点。
+- **自动同步与归档沉淀**：执行 `cabbage sync` 或 `cabbage archive` 时，自动将验证通过的变更规范萃取沉淀至 `docs/` 标准文档树，变更历史安全归档至 `.cabbage/archive/`。
+- **存量文档无痛采纳（Adoption）**：提供 `cabbage adopt` 自动扫描清点项目存量文档，支持 `--apply` 一键自动归类与迁移。
+- **现代化 VitePress 驱动**：开箱集成 VitePress 1.6 + Mermaid 图表，极速 Vite 编译与即时搜索，并通过 GitHub Actions 自动持续部署至 GitHub Pages。
 
 ---
 
