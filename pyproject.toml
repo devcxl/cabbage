@@ -16,4 +16,4 @@ cabbage = "cabbage_cli.cli:main"
 include = ["cabbage_cli*"]
 
 [tool.setuptools.package-data]
-cabbage_cli = ["assets/**/*", "assets/docs-site/.vuepress/*"]
+cabbage_cli = ["assets/**/*", "assets/docs-site/.vitepress/*"]

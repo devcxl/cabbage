@@ -62,18 +62,17 @@ class CabbageRenameTest(unittest.TestCase):
                     / ".cabbage/tooling/cabbage_cli/assets/docs-site/package.json"
                 ).read_text(encoding="utf-8")
             )
-            config = (root / "docs/.vuepress/config.ts").read_text(encoding="utf-8")
+            config = (root / "docs/.vitepress/config.ts").read_text(encoding="utf-8")
 
             self.assertEqual(0, result.returncode, result.stderr)
             for package in (generated, vendored):
                 dependencies = package["devDependencies"]
                 self.assertEqual(
-                    "^2.0.0-rc.132", dependencies["@vuepress/plugin-markdown-chart"]
+                    "^1.6.4", dependencies["vitepress"]
                 )
-                self.assertEqual("^1.103.1", dependencies["sass-embedded"])
-                self.assertNotIn("vuepress-plugin-md-enhance", dependencies)
-            self.assertIn("markdownChartPlugin({ mermaid: true })", config)
-            self.assertNotIn("mdEnhancePlugin", config)
+                self.assertEqual("^2.0.17", dependencies["vitepress-plugin-mermaid"])
+                self.assertEqual("^11.4.1", dependencies["mermaid"])
+            self.assertIn("withMermaid", config)
 
     def test_project_metadata_exposes_only_cabbage(self):
         repository = Path(__file__).parents[1]
@@ -88,7 +87,7 @@ class CabbageRenameTest(unittest.TestCase):
             ["cabbage_cli*"], metadata["tool"]["setuptools"]["packages"]["find"]["include"]
         )
         package_data = metadata["tool"]["setuptools"]["package-data"]["cabbage_cli"]
-        self.assertIn("assets/docs-site/.vuepress/*", package_data)
+        self.assertIn("assets/docs-site/.vitepress/*", package_data)
 
     def test_vendored_cabbage_cli_can_run(self):
         repository = Path(__file__).parents[1]

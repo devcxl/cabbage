@@ -69,7 +69,7 @@ cabbage docs dev
 - `sync` / `archive` 自动将变更中的需求与设计规范沉淀到 `docs/` 全局文档中，避免手动重复搬运。
 - `ci` 使用 Git diff 检查代码变更是否绑定 `.cabbage/changes/<change>`。
 - `gate merge` 要求当前 change 的所有激活阶段均已验证完成。
-- VuePress 构建作为 CI 文档门禁；Mermaid 由官方 `@vuepress/plugin-markdown-chart` 插件渲染。
+- VitePress 构建作为 CI 文档门禁；Mermaid 由 `vitepress-plugin-mermaid` 插件渲染。
 
 ## 真正形成门禁
 

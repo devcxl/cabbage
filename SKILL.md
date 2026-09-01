@@ -106,9 +106,9 @@ Prefer Mermaid for diagrams that should be reviewed with code:
 
 Keep the Mermaid source in Markdown. Do not commit PNG screenshots as the primary architecture source when Mermaid is sufficient.
 
-## VuePress
+## VitePress
 
-`cabbage init` scaffolds a standalone `docs/` VuePress site with Mermaid support.
+`cabbage init` scaffolds a standalone `docs/` VitePress site with Mermaid support.
 
 ```bash
 cabbage docs install

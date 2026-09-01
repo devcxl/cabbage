@@ -1,8 +1,7 @@
 __pycache__/
 *.py[cod]
 
-# cabbage / VuePress
+# cabbage / VitePress
 docs/node_modules/
-docs/.vuepress/.cache/
-docs/.vuepress/.temp/
-docs/.vuepress/dist/
+docs/.vitepress/cache/
+docs/.vitepress/dist/

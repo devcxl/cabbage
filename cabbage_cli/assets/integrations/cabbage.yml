@@ -80,7 +80,7 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vuepress/dist
+          path: docs/.vitepress/dist
 
   deploy-pages:
     name: Deploy to GitHub Pages

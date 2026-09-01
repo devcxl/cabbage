@@ -8,4 +8,4 @@ cabbage docs dev       # local preview
 cabbage docs build     # production build
 ```
 
-The VuePress build output is `docs/.vuepress/dist/`.
+The VitePress build output is `docs/.vitepress/dist/`.

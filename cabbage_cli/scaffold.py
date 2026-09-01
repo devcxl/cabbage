@@ -7,7 +7,7 @@ from .core import CabbageError, dump_yaml, load_config, load_yaml, change_dir, n
 
 IMPACT_FIELDS=["product","architecture","api","database","security","testing","deployment","operations","data","performance"]
 
-ADOPTION_IGNORED_DIRS={".git",".cabbage",".github",".idea",".vscode",".venv","venv","node_modules","__pycache__","dist","build","target","coverage","site",".cache",".temp",".vuepress","vendor"}
+ADOPTION_IGNORED_DIRS={".git",".cabbage",".github",".idea",".vscode",".venv","venv","node_modules","__pycache__","dist","build","target","coverage","site",".cache",".temp",".vitepress",".vuepress","vendor"}
 
 ADOPTION_CATEGORY_RULES=[
     ("adr",{"adr"}),
@@ -105,13 +105,13 @@ def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
     cip=gh/"cabbage.yml"
     if not cip.exists(): cip.write_text(ci,encoding="utf-8")
     gi=root/".gitignore"
-    ignores=["docs/node_modules/","docs/.vuepress/.cache/","docs/.vuepress/.temp/","docs/.vuepress/dist/"]
+    ignores=["docs/node_modules/","docs/.vitepress/cache/","docs/.vitepress/dist/"]
     existing=gi.read_text(encoding="utf-8") if gi.exists() else ""
     add=[x for x in ignores if x not in existing.splitlines()]
     if add:
         with gi.open("a",encoding="utf-8") as f:
             if existing and not existing.endswith("\n"): f.write("\n")
-            f.write("\n# cabbage / VuePress\n"+"\n".join(add)+"\n")
+            f.write("\n# cabbage / VitePress\n"+"\n".join(add)+"\n")
     if vendor_cli:
         pkg=Path(__file__).resolve().parent
         target=d/"tooling/cabbage_cli"

@@ -12,7 +12,7 @@ Run `cabbage adopt` after `cabbage init` when the repository already contains lo
 cabbage init
 ```
 
-`init` only adds `.cabbage/`, the `docs/` VuePress skeleton, and CI wiring. It never removes or rewrites existing files. If a `docs/` directory already exists with different content, review each scaffold file before accepting it.
+`init` only adds `.cabbage/`, the `docs/` VitePress skeleton, and CI wiring. It never removes or rewrites existing files. If a `docs/` directory already exists with different content, review each scaffold file before accepting it.
 
 ## Phase 2: Inventory
 
