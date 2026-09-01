@@ -5,24 +5,30 @@ description: Enforce end-to-end project documentation lifecycle, change workflow
 
 # Cabbage Skill: Project Documentation Lifecycle & Workflow Gates
 
-## 1. When to Use
+## 1. When to Use & Scenario Dispatch (Phase 0)
 
-Use this Skill whenever performing any of the following software engineering activities:
+Use this Skill whenever performing any software engineering, architecture, documentation, or operational activity.
 
-- Developing new business capabilities or user-facing features (`feature`).
-- Evolving system topology, runtime architecture, boundaries, or major tech stacks (`architecture`).
-- Resolving defects or regressions (`bugfix`).
-- Applying urgent production patches (`hotfix`).
-- Performing internal code structural refactoring (`refactor`).
-- Modifying database schemas, data storage, or runtime platforms (`migration`).
-- Integrating with third-party APIs, webhooks, or external platforms (`integration`).
-- Responding to production incidents and conducting postmortems (`incident`).
-- Onboarding existing project documentation into standard lifecycle governance (`adoption`).
-- Previewing, validating, or building the project documentation site (`docs`).
+Before beginning, classify the incoming task against the 10 scenario archetypes:
+
+| Scenario Archetype | Cabbage Change Type | Workflow Path | Key Actions & Exit Criteria |
+|---|---|---|---|
+| **New Feature / Capability** | `feature` | Full Lifecycle | PRD -> Tech Spec (Testing Decisions) -> Tasks (Vertical Slices) -> Implementation -> Dual-Axis Review -> Merge |
+| **Bug / Regression** | `bugfix` | Lightweight Corrective | Reproduce -> Failing Test (RED) -> Minimal Fix (GREEN) -> Regression Verify |
+| **Production Incident / Hotfix** | `hotfix` / `incident` | Fast-Track Patch | Patch from release tag -> Minimal Fix -> Release PR -> Rollback plan |
+| **Business Adjustment** | `feature` / `bugfix` | Change Management | Impact analysis -> Backward compatibility check -> Update spec -> Implement |
+| **Refactoring** | `refactor` | Behavior-Preserving | Test safety net -> Stepwise refactor -> Differential/snapshot parity check |
+| **Tech Debt Cleanup** | `refactor` | Behavior-Preserving Removal | Inventory unused assets -> Verify consumer references -> Delete -> Full regression |
+| **Infrastructure Change** | `integration` / `refactor` | CI-as-Acceptance | Small incremental steps -> Push to CI -> Verify build pipeline & regression |
+| **Documentation Update** | `feature` or direct docs | Docs-as-Code | Update canonical docs -> Terminology check -> Docs build verify (`cabbage docs build`) |
+| **Rollback & Recovery** | `hotfix` | Controlled Rollback | Revert PR -> Create root-cause corrective change -> Clean worktrees |
+| **Technical Research** | `architecture` | Evidence-Driven | Frame hypothesis -> Conduct research/POC -> Document findings & trade-offs |
+
+- *Reference: [`references/decision-tree.md`](references/decision-tree.md) for full classification tree and impact mappings.*
 
 ---
 
-## 2. Core Philosophy & Anti-Rot Rules
+## 2. Core Principles & Anti-Rot Rules
 
 1. **Single Source of Truth**: Every architectural or product fact lives in exactly one canonical document; all other docs link to it.
 2. **Current-State vs. Decision History**:
@@ -43,12 +49,12 @@ Before or during execution, consult the following dedicated reference guides in 
 | Reference Document | Scope & Key Topics | When to Consult |
 |---|---|---|
 | [`references/cli.md`](references/cli.md) | Complete CLI syntax, subcommands, flags, exit codes, and JSON outputs | Executing or debugging any `cabbage` command |
-| [`references/decision-tree.md`](references/decision-tree.md) | 8 change types classification tree, impact matrix, conditional activations | Classifying a new task or configuring impact flags |
+| [`references/decision-tree.md`](references/decision-tree.md) | 10 scenario archetypes, classification tree, impact matrix, conditional activations | Classifying a new task or configuring impact flags |
 | [`references/lifecycle.md`](references/lifecycle.md) | Change states (`active` / `archived`), stage state machine, SHA-256 signatures, stale triggers | Understanding state transitions or resolving gate blocks |
 | [`references/directory-structure.md`](references/directory-structure.md) | Standard 22-category `docs/` tree layout and placement rules | Locating, creating, or moving long-lived documentation |
-| [`references/document-types.md`](references/document-types.md) | Specifications, required headings, and lifecycle rules for all 12 artifact types | Writing PRD, Tech Spec, ADR, RFC, API Design, etc. |
+| [`references/document-types.md`](references/document-types.md) | Specifications, Testing Decisions, vertical task slices, and lifecycle rules for 12 artifact types | Writing PRD, Tech Spec, ADR, RFC, API Design, etc. |
 | [`references/adoption.md`](references/adoption.md) | 7-phase flow for scanning, classifying, and migrating existing repository docs | Onboarding pre-existing project documentation |
-| [`references/validation.md`](references/validation.md) | Automated validation rules, structural checks, and manual peer review checklist | Troubleshooting `verify`/`validate` or reviewing PRs |
+| [`references/validation.md`](references/validation.md) | Automated validation rules, TDD protocol, and Dual-Axis Review framework | Troubleshooting `verify`/`validate` or reviewing PRs |
 | [`references/linking-rules.md`](references/linking-rules.md) | Relative path resolution, stable heading anchors, cross-referencing rules | Writing Markdown links between files |
 | [`references/naming-conventions.md`](references/naming-conventions.md) | Kebab-case naming, ADR/RFC numbering formats (`ADR-0001-...`), anti-patterns | Naming change workspaces, ADRs, RFCs, and files |
 | [`references/diagrams.md`](references/diagrams.md) | Mermaid diagram syntax templates (Flowchart, Sequence, State, ER, Class, Git) | Creating or reviewing architectural diagrams |
@@ -67,14 +73,14 @@ Follow this end-to-end workflow when implementing a new feature or business capa
 ```mermaid
 flowchart TD
     A["1. cabbage doctor & new feature <id>"] --> B["2. cabbage impact <id> --set ..."]
-    B --> C["3. Draft PRD & Tech Spec & Tasks"]
+    B --> C["3. Draft PRD, Tech Spec (Testing Decisions) & Tasks"]
     C --> D["4. cabbage verify <id> <stage>"]
     D --> E{"5. cabbage gate <id> implementation"}
     E -- Blocked --> C
-    E -- Allowed --> F["6. Implement Code & Mark Tasks Done [x]"]
+    E -- Allowed --> F["6. TDD Implementation (RED->GREEN) & Mark Tasks Done [x]"]
     F --> G["7. Draft & Verify test-plan & release-plan"]
     G --> H["8. cabbage validate <id> & cabbage sync <id>"]
-    H --> I{"9. cabbage gate <id> merge & cabbage ci"}
+    H --> I{"9. Dual-Axis Review & cabbage gate <id> merge"}
     I -- Blocked --> F
     I -- Allowed --> J["10. Merge PR & cabbage archive <id>"]
 ```
@@ -105,11 +111,11 @@ cabbage next <change-id>
 # Edit .cabbage/changes/<change-id>/prd.md
 cabbage verify <change-id> prd
 
-# Edit tech-spec.md, tasks.md, api-design.md, database-design.md, etc.
+# Edit tech-spec.md (must include ## Testing Decisions), tasks.md (vertical slices), etc.
 cabbage verify <change-id> tech-spec
 cabbage verify <change-id> tasks
 ```
-- *Reference: [`references/document-types.md`](references/document-types.md) for required headings and sections.*  
+- *Reference: [`references/document-types.md`](references/document-types.md) for Testing Decisions and vertical task slice standards.*  
 - *Reference: [`references/diagrams.md`](references/diagrams.md) for Mermaid architectural diagram templates.*
 
 #### Step 4: Pre-Implementation Gate Guard
@@ -118,10 +124,14 @@ Before writing source code, confirm the implementation gate passes:
 ```bash
 cabbage gate <change-id> implementation
 ```
-*If this command exits with non-zero or output `BLOCKED`, resolve missing or stale stages before touching code.*
+*If this command exits with non-zero or outputs `BLOCKED`, resolve missing or stale stages before touching code.*
 
-#### Step 5: Implementation & Checklist Maintenance
-Write source code, unit tests, and integration tests. As tasks are completed, update `.cabbage/changes/<change-id>/tasks.md` from `- [ ]` to `- [x]`.
+#### Step 5: TDD Implementation & Checklist Maintenance
+Follow behavior-oriented TDD (`RED` -> `GREEN` -> `refactor`) across public Test Seams:
+1. Write a failing behavioral test against the public Seam.
+2. Implement minimal code to turn the test green.
+3. Update `.cabbage/changes/<change-id>/tasks.md` from `- [ ]` to `- [x]`.
+- *Reference: [`references/validation.md`](references/validation.md) for TDD behavioral protocol.*
 
 #### Step 6: Post-Implementation Verification & Plans
 Complete and verify `test-plan.md` and `release-plan.md`:
@@ -143,13 +153,14 @@ cabbage docs build
 - *Reference: [`references/directory-structure.md`](references/directory-structure.md) for synced target paths.*  
 - *Reference: [`references/documentation-site.md`](references/documentation-site.md) for VitePress build details.*
 
-#### Step 8: Merge Gate & CI Verification
-Ensure all merge gate criteria are satisfied:
+#### Step 8: Dual-Axis Review & Merge Gate
+Execute Dual-Axis Review (Specification Axis + Convention Axis) and evaluate merge readiness:
 
 ```bash
 cabbage gate <change-id> merge
 cabbage ci --base origin/main
 ```
+- *Reference: [`references/validation.md`](references/validation.md) for Dual-Axis Review criteria.*
 
 #### Step 9: PR Merge & Archival
 After merging the PR into the target branch:
@@ -231,10 +242,10 @@ Follow this streamlined procedure for defect corrections.
    cabbage impact <change-id>
    ```
    *Only enable fields directly affected by the bugfix (e.g. `testing=true`).*
-3. **Verify Root Cause & Tasks**:
-   - Document root cause analysis and reproduction steps in `tasks.md`.
-   - Implement the fix and regression test.
-   - Mark checklist items as completed `- [x]`.
+3. **Reproduce & Fix with TDD**:
+   - Write a failing reproduction test (RED).
+   - Apply minimal fix (GREEN).
+   - Document root cause analysis in `tasks.md` and mark checklist items `- [x]`.
 4. **Verify & Merge**:
    ```bash
    cabbage verify <change-id> tasks
@@ -294,7 +305,24 @@ Follow this procedure to document live service outages, root cause analysis, and
 
 ---
 
-## 5. Command Quick Reference
+## 5. Long-Session Context Management & Handoff
+
+During extended execution or when switching between major phases:
+
+1. **Context Pressure Mitigation**: When conversation history grows large or when pausing work:
+   - Produce a concise handoff record under `docs/dev/handoff-<YYYY-MM-DD>.md` summarizing:
+     - Current change ID and phase.
+     - Completed stages and verified artifacts.
+     - Active tasks in progress and immediate next step.
+     - Key files created/modified.
+2. **Session Resumption**:
+   - Check existing changes: `cabbage status`
+   - Inspect ready actions: `cabbage next <change-id>`
+   - Resume directly from the next unblocked stage rather than re-scanning the entire project.
+
+---
+
+## 6. Command Quick Reference
 
 ```bash
 # Environment & Diagnosis
@@ -326,7 +354,7 @@ cabbage docs install|dev|build                 # VitePress lifecycle
 
 ---
 
-## 6. Troubleshooting & Common Failure Modes
+## 7. Troubleshooting & Common Failure Modes
 
 | Error / Failure | Root Cause | Resolution |
 |---|---|---|
