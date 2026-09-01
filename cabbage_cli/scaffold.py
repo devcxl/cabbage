@@ -46,6 +46,13 @@ ADOPTION_CONFORMING_AREAS={
     "11":"ci-cd","12":"release","13":"operations","14":"performance","15":"incident","16":"dependencies","17":"compliance",
 }
 
+ALL_CONFORMING_DIRS = [
+    "00-overview", "01-product", "02-design", "03-architecture/adr", "03-architecture/rfc",
+    "03-architecture/system-design", "04-data", "05-api", "06-development", "07-standards",
+    "08-testing", "09-security", "10-infrastructure", "11-ci-cd", "12-release",
+    "13-operations", "14-performance", "15-incidents", "16-dependencies", "17-compliance"
+]
+
 def asset(path: str):
     return resources.files("cabbage_cli").joinpath("assets", path)
 
@@ -90,7 +97,7 @@ def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
     (d/"changes").mkdir(exist_ok=True); (d/"archive").mkdir(exist_ok=True)
     copy_asset_tree("docs-site",root/"docs",overwrite=False)
     # current-state doc skeleton
-    for name in ["00-overview","01-product","03-architecture/adr","03-architecture/rfc","04-data","05-api","08-testing","09-security","12-release","13-operations","15-incidents"]:
+    for name in ALL_CONFORMING_DIRS:
         (root/"docs"/name).mkdir(parents=True,exist_ok=True)
     # CI template
     gh=root/".github/workflows"; gh.mkdir(parents=True,exist_ok=True)
@@ -207,7 +214,13 @@ def conforming_area(rel: Path, docs_name: str|None=None) -> str|None:
         return ADOPTION_CONFORMING_AREAS[m.group(1)]
     return None
 
-def adopt_project(root: Path) -> dict:
+def discard_change(root: Path, change_id: str) -> None:
+    d = change_dir(root, change_id)
+    if not d.exists():
+        raise CabbageError(f"change `{change_id}` does not exist")
+    shutil.rmtree(d)
+
+def adopt_project(root: Path, apply: bool = False) -> dict:
     project_root(root)
     load_config(root)
     rows=[]; counts={"migrate":0,"import":0,"keep":0,"review":0}
@@ -220,11 +233,38 @@ def adopt_project(root: Path) -> dict:
             action,category,target=classify_adoption_doc(rel)
         counts[action]+=1
         rows.append({"path":str(rel).replace("\\","/"),"action":action,"category":category,"target":target})
+
+    applied = []
+    if apply:
+        for r in rows:
+            if r["action"] in {"migrate", "import"} and r["target"]:
+                src_path = root / r["path"]
+                dst_dir = root / r["target"]
+                dst_dir.mkdir(parents=True, exist_ok=True)
+                dst_path = dst_dir / src_path.name
+                if not dst_path.exists():
+                    shutil.move(str(src_path), str(dst_path))
+                    if r["action"] == "migrate":
+                        try:
+                            text = dst_path.read_text(encoding="utf-8")
+                            if not text.startswith("---\n"):
+                                fm = f"---\ncategory: {r['category']}\nadopted_at: {now_iso()}\n---\n\n"
+                                dst_path.write_text(fm + text, encoding="utf-8")
+                        except Exception:
+                            pass
+                    applied.append({"from": r["path"], "to": str(dst_path.relative_to(root)).replace("\\", "/")})
+
+        if applied:
+            # Re-scan after applying
+            res = adopt_project(root, apply=False)
+            res["applied"] = applied
+            return res
+
     report=render_adoption_report(root,rows)
     out=root/".cabbage/adoption-report.md"
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(report,encoding="utf-8")
-    return {"report":str(out.relative_to(root)),"counts":counts,"documents":rows}
+    return {"report":str(out.relative_to(root)),"counts":counts,"documents":rows, "applied": applied}
 
 def render_adoption_report(root: Path, rows: list[dict]) -> str:
     docs_name=load_config(root).get("docs",{}).get("dir","docs")

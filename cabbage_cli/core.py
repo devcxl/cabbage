@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib, json, os, re, shutil, subprocess
+import hashlib, json, os, re, shutil, subprocess, tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -46,19 +46,29 @@ LEGACY_PLACEHOLDERS = (
 class CabbageError(RuntimeError):
     pass
 
+def write_text_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False, encoding=encoding) as tf:
+        tf.write(text)
+        temp_name = tf.name
+    os.replace(temp_name, path)
+
 def load_yaml(path: Path) -> dict:
     if not path.exists():
         raise CabbageError(f"missing file: {path}")
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as e:
+        raise CabbageError(f"invalid YAML in {path}: {e}")
     return data or {}
 
 def dump_yaml(path: Path, data: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    content = yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
+    write_text_atomic(path, content, encoding="utf-8")
 
 def dump_json(path: Path, data: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+    write_text_atomic(path, content, encoding="utf-8")
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -129,10 +139,15 @@ def artifact_path(root: Path, change_id: str, stage: dict) -> Path | None:
     artifact = stage.get("artifact")
     return change_dir(root, change_id) / artifact if artifact else None
 
-def current_signature(root: Path, change_id: str, stage_id: str, memo: dict | None = None) -> str:
+def current_signature(root: Path, change_id: str, stage_id: str, memo: dict | None = None, visiting: set[str] | None = None) -> str:
     memo = memo if memo is not None else {}
     if stage_id in memo:
         return memo[stage_id]
+    visiting = visiting if visiting is not None else set()
+    if stage_id in visiting:
+        raise CabbageError(f"dependency cycle detected involving stage: `{stage_id}`")
+    visiting.add(stage_id)
+
     spec = change_spec(root, change_id)
     wf, wf_path = workflow(root, spec["type"])
     smap = stage_map(wf)
@@ -145,10 +160,11 @@ def current_signature(root: Path, change_id: str, stage_id: str, memo: dict | No
         "context": stage_context(spec, stage),
         "stage": stage,
         "artifact": sha256_file(ap) if ap else None,
-        "dependencies": {d: current_signature(root, change_id, d, memo) for d in stage.get("depends_on", []) if d in smap and condition_enabled(smap[d], spec)},
+        "dependencies": {d: current_signature(root, change_id, d, memo, visiting.copy()) for d in stage.get("depends_on", []) if d in smap and condition_enabled(smap[d], spec)},
     }
     sig = sha256_bytes(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode())
     memo[stage_id] = sig
+    visiting.remove(stage_id)
     return sig
 
 def stage_statuses(root: Path, change_id: str) -> list[dict]:
@@ -176,8 +192,24 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     end=text.find("\n---\n", 4)
     if end < 0:
         return {}, text
-    meta=yaml.safe_load(text[4:end]) or {}
+    try:
+        meta=yaml.safe_load(text[4:end]) or {}
+    except yaml.YAMLError as e:
+        raise CabbageError(f"invalid frontmatter YAML: {e}")
     return meta, text[end+5:]
+
+def extract_headings_and_slugs(markdown_text: str) -> set[str]:
+    slugs = set()
+    for line in markdown_text.splitlines():
+        m = re.match(r"^#+\s+(.+)$", line)
+        if m:
+            title = m.group(1).strip()
+            slug = re.sub(r"[^\w\s-]", "", title).strip().lower()
+            slug = re.sub(r"[\s_]+", "-", slug)
+            if slug:
+                slugs.add(slug)
+            slugs.add(title.lower())
+    return slugs
 
 def validate_markdown(root: Path, change_id: str, stage: dict, verification: bool=False) -> list[str]:
     errors=[]
@@ -208,38 +240,71 @@ def validate_markdown(root: Path, change_id: str, stage: dict, verification: boo
             errors.append(
                 f"{stage['id']}: placeholder content remains; replace all template prompts"
             )
-    if text.count("```mermaid") > text.count("```", 0) // 2:
-        errors.append(f"{stage['id']}: malformed Mermaid fence")
-    # More reliable fence state check
-    in_mermaid=False
+
+    # Mermaid verification
+    in_mermaid = False
+    mermaid_blocks = []
+    cur_block = []
     for line in text.splitlines():
-        if not in_mermaid and line.strip().startswith("```mermaid"):
-            in_mermaid=True
-        elif in_mermaid and line.strip() == "```":
-            in_mermaid=False
+        stripped = line.strip()
+        if not in_mermaid and stripped.startswith("```mermaid"):
+            in_mermaid = True
+            cur_block = []
+        elif in_mermaid and stripped == "```":
+            in_mermaid = False
+            mermaid_blocks.append("\n".join(cur_block))
+        elif in_mermaid:
+            cur_block.append(line)
     if in_mermaid:
         errors.append(f"{stage['id']}: unclosed Mermaid block")
-    # Local markdown links
+
+    MERMAID_TYPES = (
+        "graph", "flowchart", "sequenceDiagram", "classDiagram", "stateDiagram",
+        "stateDiagram-v2", "erDiagram", "journey", "gantt", "pie", "quadrantChart",
+        "requirementDiagram", "gitGraph", "c4Context", "mindmap", "timeline", "sankey-beta", "xychart-beta"
+    )
+    for block in mermaid_blocks:
+        clean_lines = [l.strip() for l in block.splitlines() if l.strip() and not l.strip().startswith("%%")]
+        if not clean_lines:
+            errors.append(f"{stage['id']}: empty Mermaid diagram block")
+        elif not any(clean_lines[0].startswith(mtype) for mtype in MERMAID_TYPES):
+            errors.append(f"{stage['id']}: Mermaid block missing recognized diagram type (e.g. flowchart, sequenceDiagram)")
+
+    # Local markdown links and anchors
     for target in re.findall(r"\[[^\]]*\]\(([^)]+)\)", text):
         target=target.strip().split()[0].strip("<>")
-        if not target or target.startswith(("http://", "https://", "mailto:", "#")):
+        if not target or target.startswith(("http://", "https://", "mailto:")):
             continue
-        raw=target.split("#",1)[0]
-        if not raw:
-            continue
-        p=(ap.parent/raw).resolve()
-        try:
-            p.relative_to(root.resolve())
-        except ValueError:
-            errors.append(f"{stage['id']}: link escapes project root: {target}")
-            continue
-        if not p.exists():
-            errors.append(f"{stage['id']}: broken local link: {target}")
+        raw, *anchor = target.split("#", 1)
+        anchor_name = anchor[0].strip().lower() if anchor else None
+
+        if raw:
+            p=(ap.parent/raw).resolve()
+            try:
+                p.relative_to(root.resolve())
+            except ValueError:
+                errors.append(f"{stage['id']}: link escapes project root: {target}")
+                continue
+            if not p.exists():
+                errors.append(f"{stage['id']}: broken local link: {target}")
+                continue
+            if p.is_dir():
+                if not (p / "README.md").exists() and not (p / "index.md").exists():
+                    errors.append(f"{stage['id']}: directory link missing README.md/index.md: {target}")
+            elif anchor_name and p.suffix.lower() in {".md", ".mdx"}:
+                target_slugs = extract_headings_and_slugs(p.read_text(encoding="utf-8"))
+                if anchor_name not in target_slugs:
+                    errors.append(f"{stage['id']}: broken anchor in link: {target}")
+        elif anchor_name:
+            current_slugs = extract_headings_and_slugs(text)
+            if anchor_name not in current_slugs:
+                errors.append(f"{stage['id']}: broken internal anchor: #{anchor_name}")
+
     if stage.get("validator") == "checklist":
-        boxes=re.findall(r"^\s*[-*]\s+\[([ xX])\]", body, flags=re.M)
+        boxes=re.findall(r"^\s*[-*]\s+\[([ xX\-\/])\]", body, flags=re.M)
         if not boxes:
             errors.append(f"{stage['id']}: expected at least one task checkbox")
-        if verification and any(x.strip().lower() != "x" for x in boxes):
+        if verification and any(x.strip() in {"", " "} for x in boxes):
             errors.append(f"{stage['id']}: unchecked implementation tasks remain")
     return errors
 
@@ -263,7 +328,7 @@ def verify_stage(root: Path, change_id: str, stage_id: str) -> None:
     state["completed"][stage_id]={"signature":current_signature(root,change_id,stage_id),"verified_at":now_iso(),"completed_at":now_iso()}
     save_state(root,change_id,state)
 
-STAGE_DOCS_MAPPING = {
+DEFAULT_STAGE_DOCS_MAPPING = {
     "requirement": "01-product/{change_id}.md",
     "design": "03-architecture/system-design/{change_id}.md",
     "adr": "03-architecture/adr/{change_id}.md",
@@ -277,16 +342,24 @@ STAGE_DOCS_MAPPING = {
     "postmortem": "15-incidents/{change_id}-postmortem.md",
 }
 
+def stage_docs_mapping(root: Path) -> dict[str, str]:
+    cfg = load_config(root)
+    custom = cfg.get("docs", {}).get("mapping", {})
+    mapping = dict(DEFAULT_STAGE_DOCS_MAPPING)
+    mapping.update(custom)
+    return mapping
+
 def sync_change_to_docs(root: Path, change_id: str) -> list[str]:
     spec=change_spec(root, change_id); wf,_=workflow(root, spec["type"])
     docs_name=load_config(root).get("docs",{}).get("dir","docs")
     docs_root=root/docs_name
+    mapping=stage_docs_mapping(root)
     synced=[]
     for st in wf.get("stages",[]):
         sid=st["id"]
         if not condition_enabled(st, spec):
             continue
-        rel_target_tmpl=STAGE_DOCS_MAPPING.get(sid)
+        rel_target_tmpl=mapping.get(sid)
         if not rel_target_tmpl:
             continue
         ap=artifact_path(root, change_id, st)
@@ -302,8 +375,7 @@ def sync_change_to_docs(root: Path, change_id: str) -> list[str]:
         }
         dest_text=f"---\n{yaml.safe_dump(dest_meta, sort_keys=False, allow_unicode=True)}---\n\n{body.lstrip()}"
         dest_path=docs_root/rel_target_tmpl.format(change_id=change_id)
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-        dest_path.write_text(dest_text, encoding="utf-8")
+        write_text_atomic(dest_path, dest_text, encoding="utf-8")
         synced.append(str(dest_path.relative_to(root)).replace("\\","/"))
     return synced
 
@@ -340,10 +412,19 @@ def git_changed_files(root: Path, base: str) -> list[str]:
         raise CabbageError(proc.stderr.strip() or f"git diff failed against {base}")
     return [x.strip() for x in proc.stdout.splitlines() if x.strip()]
 
+KNOWN_EXCLUDE_FILES = {
+    "README.md", "README_zh.md", "LICENSE", "LICENSE.md", "LICENSE.txt",
+    ".gitignore", ".gitattributes", ".editorconfig", ".prettierrc", ".prettierignore",
+    ".eslintignore", ".eslintrc", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml",
+    "requirements.txt", "pyproject.toml", "Makefile", "Dockerfile", "docker-compose.yml"
+}
+
 def is_code_change(path: str, cfg: dict) -> bool:
     normalized=path.replace("\\","/")
-    excludes=tuple(cfg.get("ci",{}).get("exclude_prefixes",["docs/",".cabbage/",".github/","README","LICENSE"]))
+    excludes=tuple(cfg.get("ci",{}).get("exclude_prefixes",["docs/",".cabbage/",".github/"]))
     if any(normalized.startswith(x) for x in excludes): return False
+    filename = Path(normalized).name
+    if filename in KNOWN_EXCLUDE_FILES: return False
     if normalized.endswith((".md",".mdx",".txt")): return False
     return True
 

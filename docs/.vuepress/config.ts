@@ -3,7 +3,10 @@ import { viteBundler } from '@vuepress/bundler-vite'
 import { defaultTheme } from '@vuepress/theme-default'
 import { markdownChartPlugin } from '@vuepress/plugin-markdown-chart'
 
+const base = (process.env.BASE_URL || (process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` : '/')) as `/${string}/` | '/'
+
 export default defineUserConfig({
+  base,
   lang: 'zh-CN',
   title: 'Cabbage Documentation',
   description: 'Project documentation managed by Cabbage',
@@ -18,6 +21,7 @@ export default defineUserConfig({
       { text: 'CI/CD', link: '/11-ci-cd/' },
       { text: '发布', link: '/12-release/' },
     ],
+    sidebar: 'heading',
   }),
   plugins: [markdownChartPlugin({ mermaid: true })],
 })

@@ -1,4 +1,4 @@
-name: CI
+name: CI & Docs Deployment
 
 on:
   push:
@@ -9,6 +9,15 @@ on:
     branches:
       - master
       - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   validate-and-test:
@@ -42,7 +51,10 @@ jobs:
       - name: Validate PR Workflow & Doc Binding
         if: github.event_name == 'pull_request'
         run: |
-          PYTHONPATH=.cabbage/tooling python -m cabbage_cli ci --base origin/${{ github.base_ref }}
+          if [ -d ".cabbage/tooling" ]; then
+            export PYTHONPATH=.cabbage/tooling
+          fi
+          python -m cabbage_cli ci --base origin/${{ github.base_ref }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -63,3 +75,22 @@ jobs:
       - name: Build documentation site
         working-directory: docs
         run: pnpm run build
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vuepress/dist
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    needs: validate-and-test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

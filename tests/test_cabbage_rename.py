@@ -68,7 +68,7 @@ class CabbageRenameTest(unittest.TestCase):
             for package in (generated, vendored):
                 dependencies = package["devDependencies"]
                 self.assertEqual(
-                    "next", dependencies["@vuepress/plugin-markdown-chart"]
+                    "^2.0.0-rc.132", dependencies["@vuepress/plugin-markdown-chart"]
                 )
                 self.assertEqual("^1.103.1", dependencies["sass-embedded"])
                 self.assertNotIn("vuepress-plugin-md-enhance", dependencies)

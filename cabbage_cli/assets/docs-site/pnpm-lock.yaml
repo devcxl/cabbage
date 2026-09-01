@@ -9,25 +9,25 @@ importers:
   .:
     devDependencies:
       '@vuepress/bundler-vite':
-        specifier: ^2.0.0-rc.31
+        specifier: next
         version: 2.0.0-rc.31(@types/node@26.4.0)(@vue/compiler-sfc@3.5.42)(sass-embedded@1.103.1)(sass@1.103.1)
       '@vuepress/plugin-markdown-chart':
-        specifier: ^2.0.0-rc.132
+        specifier: next
         version: 2.0.0-rc.132(@vuepress/bundler-vite@2.0.0-rc.31(@types/node@26.4.0)(@vue/compiler-sfc@3.5.42)(sass-embedded@1.103.1)(sass@1.103.1))(markdown-it@14.3.1)(mermaid@11.17.2)(vuepress@2.0.0-rc.31(@vue/compiler-sfc@3.5.42)(@vuepress/bundler-vite@2.0.0-rc.31(@types/node@26.4.0)(@vue/compiler-sfc@3.5.42)(sass-embedded@1.103.1)(sass@1.103.1))(rolldown@1.2.6)(vite@8.2.2(@types/node@26.4.0)(sass-embedded@1.103.1)(sass@1.103.1))(vue@3.5.42))
       '@vuepress/theme-default':
-        specifier: ^2.0.0-rc.132
+        specifier: next
         version: 2.0.0-rc.132(@vuepress/bundler-vite@2.0.0-rc.31(@types/node@26.4.0)(@vue/compiler-sfc@3.5.42)(sass-embedded@1.103.1)(sass@1.103.1))(markdown-it@14.3.1)(sass-embedded@1.103.1)(sass@1.103.1)(vuepress@2.0.0-rc.31(@vue/compiler-sfc@3.5.42)(@vuepress/bundler-vite@2.0.0-rc.31(@types/node@26.4.0)(@vue/compiler-sfc@3.5.42)(sass-embedded@1.103.1)(sass@1.103.1))(rolldown@1.2.6)(vite@8.2.2(@types/node@26.4.0)(sass-embedded@1.103.1)(sass@1.103.1))(vue@3.5.42))
       mermaid:
-        specifier: ^11.17.2
+        specifier: ^11.0.0
         version: 11.17.2
       sass-embedded:
         specifier: ^1.103.1
         version: 1.103.1
       vue:
-        specifier: ^3.5.42
+        specifier: ^3.5.0
         version: 3.5.42
       vuepress:
-        specifier: ^2.0.0-rc.31
+        specifier: next
         version: 2.0.0-rc.31(@vue/compiler-sfc@3.5.42)(@vuepress/bundler-vite@2.0.0-rc.31(@types/node@26.4.0)(@vue/compiler-sfc@3.5.42)(sass-embedded@1.103.1)(sass@1.103.1))(rolldown@1.2.6)(vite@8.2.2(@types/node@26.4.0)(sass-embedded@1.103.1)(sass@1.103.1))(vue@3.5.42)
 
 packages:
@@ -2389,7 +2389,7 @@ snapshots:
 
   '@types/sax@1.2.7':
     dependencies:
-      '@types/node': 26.4.0
+      '@types/node': 24.13.3
 
   '@types/trusted-types@2.0.7':
     optional: true
