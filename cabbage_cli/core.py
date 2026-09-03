@@ -456,5 +456,157 @@ def ci_check(root: Path, base: str) -> list[str]:
                     errors.append(f"{cid}: impact `{area}=true` requires a current-state docs change under: {', '.join(prefixes)}")
     return errors
 
+def parse_tasks_markdown(text: str) -> dict:
+    # 1. Parse mermaid diagram
+    mermaid_match = re.search(r"```mermaid\s*\n(flowchart\s+[\s\S]*?)\n```", text)
+    mermaid_code = mermaid_match.group(1).strip() if mermaid_match else None
+
+    # 2. Parse Task sections (## Task <slug>)
+    task_sections = re.findall(r"(?m)^##\s+(Task\b[^\n]*)\n([\s\S]*?)(?=(?:^##\s+|\Z))", text)
+    tasks = []
+
+    if task_sections:
+        for header, body in task_sections:
+            header_clean = header.strip()
+            # Extract id and title
+            m = re.match(r"^Task\s*([0-9A-Za-z_-]+)?(?::\s*(.*))?$", header_clean, flags=re.I)
+            raw_id = m.group(1) if m and m.group(1) else ""
+            task_id = f"Task {raw_id}".strip() if raw_id else header_clean
+            title = (m.group(2).strip() if m and m.group(2) else header_clean)
+
+            # Builds
+            builds_match = re.search(r"-\s+\*\*Builds\*\*:\s*([^\n]+)", body)
+            builds = builds_match.group(1).strip() if builds_match else title
+
+            # Blocked By
+            blocked_match = re.search(r"-\s+\*\*Blocked By\*\*:\s*([^\n]+)", body)
+            blocked_raw = blocked_match.group(1).strip() if blocked_match else "None"
+            if blocked_raw.lower() in {"none", "n/a", "nil", ""}:
+                blocked_by = []
+            else:
+                # Split by comma or semicolon
+                blocked_by = [x.strip() for x in re.split(r"[,;]+", blocked_raw) if x.strip()]
+
+            # Parallel Group
+            group_match = re.search(r"-\s+\*\*Parallel Group\*\*:\s*([^\n]+)", body)
+            group = group_match.group(1).strip() if group_match else "Default"
+
+            # Verification command
+            verif_match = re.search(r"-\s+\*\*Verification\*\*:\s*`?([^`\n]+)`?", body)
+            verification = verif_match.group(1).strip() if verif_match else "N/A"
+
+            # Standard Operating Procedure (SOP)
+            sop_match = re.search(r"-\s+\*\*Standard Operating Procedure[^\n]*\*\*:\s*\n((?:\s*(?:\d+\.|\*|-)\s+(?!\[[ xX\-\/]\])[^\n]+\n?)+)", body)
+            sop_steps = []
+            if sop_match:
+                sop_steps = [re.sub(r"^\s*(?:\d+\.|\*|-)\s+", "", line).strip() for line in sop_match.group(1).splitlines() if line.strip()]
+
+            # Checkboxes
+            cb_matches = re.findall(r"^\s*[-*]\s+\[([ xX\-\/])\]\s*([^\n]+)", body, flags=re.M)
+            checkboxes = [{"checked": val.lower() == "x", "text": desc.strip()} for val, desc in cb_matches]
+            is_completed = bool(checkboxes) and all(cb["checked"] for cb in checkboxes)
+
+            tasks.append({
+                "task_id": task_id,
+                "title": title,
+                "builds": builds,
+                "blocked_by": blocked_by,
+                "parallel_group": group,
+                "verification": verification,
+                "sop": sop_steps,
+                "checkboxes": checkboxes,
+                "is_completed": is_completed,
+            })
+    else:
+        # Fallback: scan checkboxes in # Tasks section
+        tasks_block_match = re.search(r"(?m)^#\s+Tasks\b([\s\S]*?)(?=(?:^#\s+|\Z))", text)
+        block = tasks_block_match.group(1) if tasks_block_match else text
+        cb_matches = re.findall(r"^\s*[-*]\s+\[([ xX\-\/])\]\s*([^\n]+)", block, flags=re.M)
+        for idx, (val, desc) in enumerate(cb_matches, start=1):
+            is_done = val.lower() == "x"
+            tasks.append({
+                "task_id": f"Task {idx}",
+                "title": desc.strip(),
+                "builds": desc.strip(),
+                "blocked_by": [],
+                "parallel_group": "Default",
+                "verification": "N/A",
+                "sop": [],
+                "checkboxes": [{"checked": is_done, "text": desc.strip()}],
+                "is_completed": is_done,
+            })
+
+    # 3. Calculate status, topological readiness
+    completed_ids = {t["task_id"] for t in tasks if t["is_completed"]}
+    completed_ids.update({"None", "none", "Preparation", "preparation"})
+
+    for t in tasks:
+        if t["is_completed"]:
+            t["status"] = "done"
+            t["is_ready"] = False
+        else:
+            unresolved = [d for d in t["blocked_by"] if d not in completed_ids and d.lower() not in {"none", "preparation", ""}]
+            if not unresolved:
+                t["status"] = "ready"
+                t["is_ready"] = True
+                t["unresolved_deps"] = []
+            else:
+                t["status"] = "blocked"
+                t["is_ready"] = False
+                t["unresolved_deps"] = unresolved
+
+    # 4. Group by parallel_group
+    parallel_groups: dict[str, list[dict]] = {}
+    for t in tasks:
+        grp = t.get("parallel_group", "Default")
+        parallel_groups.setdefault(grp, []).append(t)
+
+    # 5. Build subagent dispatch plan for ready tasks
+    dispatch_plan = []
+    for grp, grp_tasks in parallel_groups.items():
+        ready_tasks = [t for t in grp_tasks if t["is_ready"]]
+        if ready_tasks:
+            dispatch_plan.append({
+                "parallel_group": grp,
+                "tasks": [
+                    {
+                        "agent": "coder",
+                        "task_id": t["task_id"],
+                        "title": t["title"],
+                        "builds": t["builds"],
+                        "verification": t["verification"],
+                        "sop": t.get("sop", []),
+                        "prompt": f"Execute {t['task_id']} ({t['title']}): {t['builds']} following Task SOP. Verification: {t['verification']}."
+                    }
+                    for t in ready_tasks
+                ]
+            })
+
+    total_tasks = len(tasks)
+    completed_count = sum(1 for t in tasks if t["is_completed"])
+    ready_count = sum(1 for t in tasks if t["is_ready"])
+    blocked_count = total_tasks - completed_count - ready_count
+
+    return {
+        "mermaid": mermaid_code,
+        "total_tasks": total_tasks,
+        "completed_tasks": completed_count,
+        "ready_tasks": ready_count,
+        "blocked_tasks": blocked_count,
+        "tasks": tasks,
+        "parallel_groups": parallel_groups,
+        "subagent_dispatch_plan": dispatch_plan,
+    }
+
+def get_change_tasks_dag(root: Path, change_id: str) -> dict:
+    tasks_file = change_dir(root, change_id) / "tasks.md"
+    if not tasks_file.exists():
+        raise CabbageError(f"tasks.md not found for change `{change_id}`")
+    content = tasks_file.read_text(encoding="utf-8")
+    meta, body = parse_frontmatter(content)
+    result = parse_tasks_markdown(body)
+    result["change"] = change_id
+    return result
+
 def run(cmd: list[str], cwd: Path) -> int:
     return subprocess.call(cmd,cwd=cwd)

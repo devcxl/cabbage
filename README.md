@@ -145,6 +145,7 @@ cabbage archive add-user-login
 | `cabbage discard <id>` | 安全废弃并删除未归档的 active 变更 | - |
 | `cabbage status [id]` | 查看指定变更或全局变更的阶段完成与失效状态 | `--json` |
 | `cabbage next <id>` | 计算当前依赖就绪可执行的下一个阶段 | `--json` |
+| `cabbage tasks <id>` | 查看 DAG 任务拓扑、就绪状态或导出 Subagent 派发计划 | `--export-dag`, `--json` |
 | `cabbage impact <id>` | 查询或修改变更影响矩阵（如 API/数据库/安全等） | `--set field=true\|false`, `--json` |
 | `cabbage verify <id> <stage>`| 验证并记录阶段签名（检查占位符、Checklist、死链与 Mermaid） | - |
 | `cabbage gate <id> <target>` | 门禁卡点校验（`implementation` / `merge` / `archive`） | `--json` |

@@ -35,11 +35,28 @@ change_type: {{CHANGE_TYPE}}
 
 <!-- CABBAGE: Describe interface changes, data flow, state transitions, invariants, and compatibility constraints. -->
 
+## Decision Boundaries
+
+### AI Autonomous Decisions
+
+- <!-- CABBAGE: List internal implementation decisions AI can independently make (e.g. private helpers, internal data structures, local refactoring). -->
+
+### Human Gate Decisions
+
+- <!-- CABBAGE: List critical decisions requiring explicit human review/approval (e.g. breaking API changes, storage migration, security policies). -->
+
 # Alternatives
 
-| Option | Benefits | Costs and risks | Decision |
-|---|---|---|---|
-| <!-- CABBAGE: Name an alternative, including the status quo. --> | <!-- CABBAGE: List its advantages. --> | <!-- CABBAGE: List its disadvantages. --> | <!-- CABBAGE: State why it was accepted or rejected. --> |
+## Architecture Options Comparison
+
+| Option | Architecture Approach | Benefits | Costs & Risks | Recommendation |
+|---|---|---|---|---|
+| Option A (Recommended) | <!-- CABBAGE: Describe primary approach. --> | <!-- CABBAGE: List advantages and trade-offs. --> | <!-- CABBAGE: List costs and risks. --> | Chosen |
+| Option B (Alternative) | <!-- CABBAGE: Describe alternative approach (e.g. minimal vs decoupled). --> | <!-- CABBAGE: List advantages. --> | <!-- CABBAGE: List trade-offs/drawbacks. --> | Rejected |
+
+## Selected Decision & Trade-off Rationale
+
+<!-- CABBAGE: Explain why the chosen option won over alternatives and state accepted trade-offs. -->
 
 # Security and Privacy
 

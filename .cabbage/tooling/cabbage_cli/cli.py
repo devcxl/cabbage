@@ -3,7 +3,7 @@ import argparse, json, os, shutil, subprocess, sys
 from pathlib import Path
 from . import __version__
 from .core import *
-from .scaffold import init_project, new_change, ensure_artifacts, adopt_project
+from .scaffold import init_project, new_change, ensure_artifacts, adopt_project, discard_change
 
 def emit(data, as_json=False):
     if as_json: print(json.dumps(data,ensure_ascii=False,indent=2))
@@ -18,10 +18,14 @@ def cmd_init(a):
     print("existing docs to onboard? run: cabbage adopt")
 
 def cmd_adopt(a):
-    root=project_root(); data=adopt_project(root)
+    root=project_root(); data=adopt_project(root, apply=getattr(a, "apply", False))
     if a.json: emit(data,True); return 0
+    if data.get("applied"):
+        print(f"migrated {len(data['applied'])} document(s):")
+        for item in data["applied"]:
+            print(f"  {item['from']}  ->  {item['to']}")
     counts=data["counts"]
-    print(f"adoption report written to {data['report']} (no files moved)")
+    print(f"adoption report written to {data['report']}")
     print(f"documents: {sum(counts.values())} total; keep={counts['keep']} migrate={counts['migrate']} import={counts['import']} review={counts['review']}")
     for r in data["documents"]:
         if r["action"] in {"migrate","import","review"}:
@@ -29,6 +33,73 @@ def cmd_adopt(a):
             print(f"  {r['action']:8} {r['path']}  ->  {target}")
     print("next: resolve review rows, then follow references/adoption.md")
     return 0
+
+def cmd_discard(a):
+    root=project_root(); discard_change(root, a.change)
+    print(f"discarded change `{a.change}`")
+    return 0
+
+def cmd_doctor(a):
+    results = {}
+    # 1. Python
+    py_ok = sys.version_info >= (3, 10)
+    results["python"] = {
+        "ok": py_ok,
+        "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        "message": "Python >= 3.10 required" if not py_ok else "OK",
+    }
+    # 2. PyYAML
+    try:
+        import yaml
+        results["pyyaml"] = {"ok": True, "version": getattr(yaml, "__version__", "unknown")}
+    except ImportError:
+        results["pyyaml"] = {"ok": False, "message": "PyYAML is not installed"}
+
+    # 3. Git
+    git_which = shutil.which("git")
+    if git_which:
+        try:
+            p = subprocess.run(["git", "--version"], capture_output=True, text=True)
+            results["git"] = {"ok": True, "version": p.stdout.strip()}
+        except Exception as e:
+            results["git"] = {"ok": False, "message": str(e)}
+    else:
+        results["git"] = {"ok": False, "message": "git executable not found in PATH"}
+
+    # 4. pnpm
+    pnpm_which = shutil.which("pnpm")
+    if pnpm_which:
+        try:
+            p = subprocess.run(["pnpm", "--version"], capture_output=True, text=True)
+            results["pnpm"] = {"ok": True, "version": p.stdout.strip()}
+        except Exception as e:
+            results["pnpm"] = {"ok": False, "message": str(e)}
+    else:
+        results["pnpm"] = {"ok": True, "version": "not installed (optional for docs dev/build)"}
+
+    # 5. Cabbage Project
+    try:
+        r = project_root()
+        cfg = load_config(r)
+        results["project"] = {"ok": True, "path": str(r), "version": cfg.get("version", 1)}
+    except Exception as e:
+        results["project"] = {"ok": False, "message": str(e)}
+
+    all_ok = results["python"]["ok"] and results["pyyaml"]["ok"] and results["git"]["ok"]
+    if a.json:
+        emit({"ok": all_ok, "checks": results}, True)
+    else:
+        print("Cabbage Doctor Diagnosis:")
+        for name, info in results.items():
+            status = "✓" if info["ok"] else "✗"
+            ver = f"({info.get('version', '')})" if info.get('version') else ""
+            msg = f"- {info.get('message')}" if not info["ok"] or 'message' in info else ""
+            print(f"  {status} {name:10} {ver} {msg}".rstrip())
+        if all_ok:
+            print("\nAll essential dependencies and environment checks passed.")
+        else:
+            print("\nSome environment checks failed.")
+    return 0 if all_ok else 1
 
 def cmd_new(a):
     root=project_root(); new_change(root,a.type,a.change); print(f"created {a.change}"); cmd_status(argparse.Namespace(change=a.change,json=False))
@@ -132,11 +203,70 @@ def cmd_docs(a):
     if shutil.which('pnpm') is None: raise CabbageError('pnpm not found')
     return subprocess.call(cmd,cwd=docs)
 
+def cmd_tasks(a):
+    root=project_root(); data=get_change_tasks_dag(root, a.change)
+    if a.json: emit(data, True); return 0
+    if a.export_dag:
+        payload = {
+            "change": data["change"],
+            "summary": {
+                "total": data["total_tasks"],
+                "completed": data["completed_tasks"],
+                "ready": data["ready_tasks"],
+                "blocked": data["blocked_tasks"],
+            },
+            "parallel_groups": {
+                grp: [
+                    {
+                        "task_id": t["task_id"],
+                        "title": t["title"],
+                        "builds": t["builds"],
+                        "blocked_by": t["blocked_by"],
+                        "verification": t["verification"],
+                        "is_ready": t["is_ready"],
+                        "is_completed": t["is_completed"],
+                        "status": t["status"],
+                    }
+                    for t in grp_tasks
+                ]
+                for grp, grp_tasks in data["parallel_groups"].items()
+            },
+            "subagent_dispatch_plan": data["subagent_dispatch_plan"],
+        }
+        emit(payload, True)
+        return 0
+
+    print(f"Task DAG for `{data['change']}`:")
+    print(f"  Summary: {data['total_tasks']} total | {data['completed_tasks']} completed | {data['ready_tasks']} ready | {data['blocked_tasks']} blocked\n")
+    for grp, grp_tasks in data["parallel_groups"].items():
+        print(f"  [{grp}]")
+        for t in grp_tasks:
+            status_tag = "[DONE]   " if t["is_completed"] else ("[READY]  " if t["is_ready"] else "[BLOCKED]")
+            blocked_info = f" (Blocked by: {', '.join(t['blocked_by'])})" if t["blocked_by"] and not t["is_completed"] else ""
+            print(f"    {status_tag} {t['task_id']}: {t['title']}{blocked_info}")
+            if t["verification"] and t["verification"] != "N/A":
+                print(f"              Verification: {t['verification']}")
+        print()
+
+    if data["ready_tasks"] > 0:
+        print("Ready to dispatch:")
+        for grp_plan in data["subagent_dispatch_plan"]:
+            for item in grp_plan["tasks"]:
+                print(f"  - {item['task_id']}: {item['title']} (Parallel Group: {grp_plan['parallel_group']})")
+    else:
+        if data["completed_tasks"] == data["total_tasks"] and data["total_tasks"] > 0:
+            print("All tasks in DAG completed. Ready for verification & gate.")
+        else:
+            print("No tasks currently ready (check prerequisites or dependencies).")
+    return 0
+
 def parser():
     p=argparse.ArgumentParser(prog='cabbage'); p.add_argument('--version',action='version',version=__version__); sp=p.add_subparsers(dest='cmd',required=True)
     x=sp.add_parser('init'); x.add_argument('--force',action='store_true'); x.add_argument('--no-vendor-cli',action='store_true'); x.set_defaults(func=cmd_init)
-    x=sp.add_parser('adopt'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_adopt)
+    x=sp.add_parser('adopt'); x.add_argument('--apply',action='store_true'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_adopt)
+    x=sp.add_parser('doctor'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_doctor)
     x=sp.add_parser('new'); x.add_argument('type'); x.add_argument('change'); x.set_defaults(func=cmd_new)
+    x=sp.add_parser('discard'); x.add_argument('change'); x.set_defaults(func=cmd_discard)
     x=sp.add_parser('status'); x.add_argument('change',nargs='?'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_status)
     x=sp.add_parser('next'); x.add_argument('change'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_next)
     x=sp.add_parser('impact'); x.add_argument('change'); x.add_argument('--set',action='append'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_impact)
@@ -146,6 +276,7 @@ def parser():
     x=sp.add_parser('gate'); x.add_argument('change'); x.add_argument('target',choices=['implementation','merge','archive']); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_gate)
     x=sp.add_parser('archive'); x.add_argument('change'); x.set_defaults(func=cmd_archive)
     x=sp.add_parser('ci'); x.add_argument('--base',required=True); x.set_defaults(func=cmd_ci)
+    x=sp.add_parser('tasks'); x.add_argument('change'); x.add_argument('--export-dag',action='store_true'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_tasks)
     x=sp.add_parser('docs'); x.add_argument('action',choices=['install','dev','build']); x.set_defaults(func=cmd_docs)
     return p
 
@@ -154,5 +285,7 @@ def main(argv=None):
         a=parser().parse_args(argv); return a.func(a) or 0
     except CabbageError as e:
         print(f"cabbage: {e}",file=sys.stderr); return 2
+    except KeyboardInterrupt:
+        print("\naborted by user",file=sys.stderr); return 130
 
 if __name__=='__main__': raise SystemExit(main())

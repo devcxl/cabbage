@@ -72,18 +72,35 @@ Follow this end-to-end workflow when implementing a new feature or business capa
 
 ```mermaid
 flowchart TD
-    A["1. cabbage doctor & new feature <id>"] --> B["2. cabbage impact <id> --set ..."]
-    B --> C["3. Draft PRD, Tech Spec & Task DAG (Mermaid)"]
+    Pre["0. Grill-Me Alignment (Context & Boundaries)"] --> A["1. cabbage doctor & new feature <id>"]
+    A --> B["2. cabbage impact <id> --set ..."]
+    B --> C["3. Draft PRD, Tech Spec (Options) & Task DAG (SOP)"]
     C --> D["4. cabbage verify <id> <stage>"]
     D --> E{"5. cabbage gate <id> implementation"}
     E -- Blocked --> C
-    E -- Allowed --> F["6. Parallel/Sequential TDD Execution (RED->GREEN)"]
+    E -- Allowed --> F["6. cabbage tasks --export-dag & Parallel Subagent TDD"]
     F --> G["7. Mark Tasks Done [x] & Verify test-plan/release-plan"]
     G --> H["8. cabbage validate <id> & cabbage sync <id>"]
     H --> I{"9. Dual-Axis Review & cabbage gate <id> merge"}
     I -- Blocked --> F
     I -- Allowed --> J["10. Merge PR & cabbage archive <id>"]
 ```
+
+#### Step 0: Pre-Flight Context Alignment & Grill-Me Protocol
+Before touching workflow files or generating artifacts, AI and human must establish a crystal-clear boundary consensus:
+
+1. **Context & Codebase Exploration**:
+   - Inspect existing codebase, canonical docs (`docs/`), and recent changes first.
+   - Never ask questions that can be answered by reading the codebase.
+2. **Grill-Me Deep Alignment**:
+   - Probe the intent iteratively: clarify the fundamental problem, business value, user personas, and hard constraints.
+   - Explicitly define **In Scope** vs. **Explicit Non-Goals** to eliminate scope creep before it starts.
+   - Formulate questions concisely (using structured options / questionnaires where applicable).
+3. **Asymmetric Decision Framework (Frontal-Lobe Protection)**:
+   - **AI Autonomous Decisions**: Micro-level technical details, private helper structures, internal naming, local refactorings, and test mocks are decided directly by AI without cognitive overhead for the human.
+   - **Human Gate Decisions**: Strategic trade-offs, public API contracts, database schema migrations, billing/security policies, and breaking changes must be presented with options and decided by the human.
+4. **Anchor in PRD**:
+   - Record the validated assumptions, boundaries, and decision tiers into `.cabbage/changes/<change-id>/prd.md` under `## Grill-Me Alignment Summary` and `## Decision Boundaries`.
 
 #### Step 1: Initialize Workspace & Environment Check
 Check environment prerequisites and initialize the change workspace:
@@ -108,21 +125,28 @@ Inspect next ready stages, fill in the generated templates in `.cabbage/changes/
 
 ```bash
 cabbage next <change-id>
-# Edit .cabbage/changes/<change-id>/prd.md
+# Edit .cabbage/changes/<change-id>/prd.md (contains Grill-Me outcomes and Decision Boundaries)
 cabbage verify <change-id> prd
 
-# Edit tech-spec.md (must include ## Testing Decisions)
+# Edit tech-spec.md (must evaluate Architecture Options and include Testing Decisions)
 cabbage verify <change-id> tech-spec
 
-# Edit tasks.md (must define Task DAG in Mermaid, vertical slices & parallel groups)
+# Edit tasks.md (must define Mermaid DAG, Parallel Groups, and Task SOP per slice)
 cabbage verify <change-id> tasks
 ```
-- **Task DAG Principles**:
+- **Architecture Options Protocol**:
+  - In `tech-spec.md`, formulate 2 to 3 distinct architectural options (e.g. Minimal Low-Risk, Scalable Decoupled, Ideal Long-Term).
+  - Compare benefits, costs, and risks explicitly before committing to the design.
+- **Task DAG & Standard Operating Procedure (SOP)**:
   - Model tasks as a Directed Acyclic Graph (DAG) with Mermaid `flowchart TD`.
   - Slice tasks vertically (end-to-end observable behavior), avoiding horizontal tech layers.
   - Declare explicit `Blocked By` dependencies (true blocking only; no circular dependencies).
-  - Identify parallelizable task groups that can be assigned concurrently to isolated developer threads/subagents in fresh contexts.
-- *Reference: [`references/document-types.md`](references/document-types.md) for Testing Decisions and DAG vertical task slice standards.*  
+  - Every Task block must define its 4-step SOP:
+    1. *[RED]* Test Seam: Define public test seam and write failing test.
+    2. *[GREEN]* Implement: Minimal code to pass tests.
+    3. *[REFACTOR]* Clean: Refactor, lint, type check, preserve behavior.
+    4. *[VERIFY]* Validate: Run targeted verification command.
+- *Reference: [`references/document-types.md`](references/document-types.md) for Testing Decisions, Architecture Options, and DAG Task SOP standards.*  
 - *Reference: [`references/diagrams.md`](references/diagrams.md) for Mermaid architectural and DAG diagram templates.*
 
 #### Step 4: Pre-Implementation Gate Guard
@@ -133,14 +157,21 @@ cabbage gate <change-id> implementation
 ```
 *If this command exits with non-zero or outputs `BLOCKED`, resolve missing or stale stages before touching code.*
 
-#### Step 5: TDD Implementation & Parallel Execution Protocol
+#### Step 5: TDD Implementation & Subagent Parallel Orchestration
 Execute tasks according to the DAG topological order:
-1. **Parallel Execution**: Independent branches in the DAG can be executed concurrently by subagents or parallel worker threads without cross-contamination.
-2. **Behavior-Oriented TDD Cycle**:
-   - Write a failing behavioral test against the public Test Seam agreed upon in `tech-spec.md` (RED).
-   - Implement the minimal code needed to pass the test (GREEN).
-   - Refactor cleanly while preserving behavior (REFACTOR).
-3. **Checklist Maintenance**: Update `.cabbage/changes/<change-id>/tasks.md` from `- [ ]` to `- [x]` as each vertical slice is verified.
+
+1. **DAG Inspection & Dispatch Export**:
+   - Inspect DAG readiness and parallel groups:
+     ```bash
+     cabbage tasks <change-id>
+     cabbage tasks <change-id> --export-dag
+     ```
+   - Exported plans can be dispatched directly to isolated worker subagents (e.g. parallel `subagent` calls) without cross-contamination.
+2. **Standard Operating Procedure (Task SOP)**:
+   - Each worker or subagent executes the 4-step SOP strictly against the designated test seam and verification command.
+   - Mark task items `- [ ]` to `- [x]` as slices are verified.
+3. **Topological Progression**:
+   - Independent DAG branches run in parallel; convergence nodes run only after all prerequisites are marked green.
 - *Reference: [`references/validation.md`](references/validation.md) for TDD behavioral protocol and Dual-Axis Review.*
 
 #### Step 6: Post-Implementation Verification & Plans

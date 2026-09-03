@@ -203,6 +203,63 @@ def cmd_docs(a):
     if shutil.which('pnpm') is None: raise CabbageError('pnpm not found')
     return subprocess.call(cmd,cwd=docs)
 
+def cmd_tasks(a):
+    root=project_root(); data=get_change_tasks_dag(root, a.change)
+    if a.json: emit(data, True); return 0
+    if a.export_dag:
+        payload = {
+            "change": data["change"],
+            "summary": {
+                "total": data["total_tasks"],
+                "completed": data["completed_tasks"],
+                "ready": data["ready_tasks"],
+                "blocked": data["blocked_tasks"],
+            },
+            "parallel_groups": {
+                grp: [
+                    {
+                        "task_id": t["task_id"],
+                        "title": t["title"],
+                        "builds": t["builds"],
+                        "blocked_by": t["blocked_by"],
+                        "verification": t["verification"],
+                        "is_ready": t["is_ready"],
+                        "is_completed": t["is_completed"],
+                        "status": t["status"],
+                    }
+                    for t in grp_tasks
+                ]
+                for grp, grp_tasks in data["parallel_groups"].items()
+            },
+            "subagent_dispatch_plan": data["subagent_dispatch_plan"],
+        }
+        emit(payload, True)
+        return 0
+
+    print(f"Task DAG for `{data['change']}`:")
+    print(f"  Summary: {data['total_tasks']} total | {data['completed_tasks']} completed | {data['ready_tasks']} ready | {data['blocked_tasks']} blocked\n")
+    for grp, grp_tasks in data["parallel_groups"].items():
+        print(f"  [{grp}]")
+        for t in grp_tasks:
+            status_tag = "[DONE]   " if t["is_completed"] else ("[READY]  " if t["is_ready"] else "[BLOCKED]")
+            blocked_info = f" (Blocked by: {', '.join(t['blocked_by'])})" if t["blocked_by"] and not t["is_completed"] else ""
+            print(f"    {status_tag} {t['task_id']}: {t['title']}{blocked_info}")
+            if t["verification"] and t["verification"] != "N/A":
+                print(f"              Verification: {t['verification']}")
+        print()
+
+    if data["ready_tasks"] > 0:
+        print("Ready to dispatch:")
+        for grp_plan in data["subagent_dispatch_plan"]:
+            for item in grp_plan["tasks"]:
+                print(f"  - {item['task_id']}: {item['title']} (Parallel Group: {grp_plan['parallel_group']})")
+    else:
+        if data["completed_tasks"] == data["total_tasks"] and data["total_tasks"] > 0:
+            print("All tasks in DAG completed. Ready for verification & gate.")
+        else:
+            print("No tasks currently ready (check prerequisites or dependencies).")
+    return 0
+
 def parser():
     p=argparse.ArgumentParser(prog='cabbage'); p.add_argument('--version',action='version',version=__version__); sp=p.add_subparsers(dest='cmd',required=True)
     x=sp.add_parser('init'); x.add_argument('--force',action='store_true'); x.add_argument('--no-vendor-cli',action='store_true'); x.set_defaults(func=cmd_init)
@@ -219,6 +276,7 @@ def parser():
     x=sp.add_parser('gate'); x.add_argument('change'); x.add_argument('target',choices=['implementation','merge','archive']); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_gate)
     x=sp.add_parser('archive'); x.add_argument('change'); x.set_defaults(func=cmd_archive)
     x=sp.add_parser('ci'); x.add_argument('--base',required=True); x.set_defaults(func=cmd_ci)
+    x=sp.add_parser('tasks'); x.add_argument('change'); x.add_argument('--export-dag',action='store_true'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_tasks)
     x=sp.add_parser('docs'); x.add_argument('action',choices=['install','dev','build']); x.set_defaults(func=cmd_docs)
     return p
 

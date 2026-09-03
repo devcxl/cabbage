@@ -10,6 +10,11 @@ change_type: {{CHANGE_TYPE}}
 
 <!-- CABBAGE: State the user or business problem, the desired outcome, and why it matters now. -->
 
+## Grill-Me Alignment Summary
+
+- **Core Problem & Value**: <!-- CABBAGE: Summarize the clarified business intent and primary value hypothesis from pre-flight grilling. -->
+- **Assumptions Validated**: <!-- CABBAGE: Record validated assumptions and eliminated ambiguities. -->
+
 # Users and Use Cases
 
 | User or actor | Need | Primary use case |
@@ -25,6 +30,11 @@ change_type: {{CHANGE_TYPE}}
 ## Out of Scope
 
 - <!-- CABBAGE: List adjacent behavior intentionally excluded. -->
+
+## Decision Boundaries
+
+- **AI Autonomous Decisions**: <!-- CABBAGE: Technical details, internal naming, local refactoring, and test fixtures decided directly by AI. -->
+- **Human Gate Decisions**: <!-- CABBAGE: Business rules, breaking interface/data model changes, scope expansion, and domain trade-offs requiring explicit human approval. -->
 
 # Requirements
 

@@ -32,6 +32,11 @@ flowchart TD
 - **Blocked By**: None (or Preparation)
 - **Parallel Group**: Group 1
 - **Verification**: `<!-- CABBAGE: targeted test command -->`
+- **Standard Operating Procedure (Task SOP)**:
+  1. *[RED]* Define public test seam and write failing test.
+  2. *[GREEN]* Implement minimal code to pass the test.
+  3. *[REFACTOR]* Clean code, verify lint/types, maintain behavior.
+  4. *[VERIFY]* Run verification command and confirm passing.
 - [ ] <!-- CABBAGE: Implement behavior slice 1 through public test seam. -->
 - [ ] <!-- CABBAGE: Add failing test (RED) then minimal implementation (GREEN). -->
 
@@ -40,6 +45,11 @@ flowchart TD
 - **Blocked By**: Task 1
 - **Parallel Group**: Group 2
 - **Verification**: `<!-- CABBAGE: targeted test command -->`
+- **Standard Operating Procedure (Task SOP)**:
+  1. *[RED]* Define public test seam and write failing test.
+  2. *[GREEN]* Implement minimal code to pass the test.
+  3. *[REFACTOR]* Clean code, verify lint/types, maintain behavior.
+  4. *[VERIFY]* Run verification command and confirm passing.
 - [ ] <!-- CABBAGE: Implement behavior slice 2 through public test seam. -->
 - [ ] <!-- CABBAGE: Add failing test (RED) then minimal implementation (GREEN). -->
 

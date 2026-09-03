@@ -95,6 +95,18 @@ Inspect or mutate the impact analysis matrix of a change.
 cabbage impact user-oauth-login --set api=true --set database=true
 ```
 
+#### `cabbage tasks <change-id> [--export-dag] [--json]`
+Inspect DAG task topology, checklist progress, dependencies, and readiness for parallel execution.
+- **Flags**:
+  - `--json`: Output full parsed task objects, DAG topology, and parallel groups as structured JSON.
+  - `--export-dag`: Output machine-readable subagent dispatch plan with unblocked tasks and execution prompts for parallel worker threads.
+
+```bash
+cabbage tasks user-oauth-login
+cabbage tasks user-oauth-login --export-dag
+cabbage tasks user-oauth-login --json
+```
+
 #### `cabbage discard <change-id>`
 Delete an active change workspace and clean up its pending artifacts.
 

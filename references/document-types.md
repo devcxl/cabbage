@@ -41,6 +41,18 @@ Every non-trivial `tech-spec.md` must declare:
 3. **Observable Outcome**: The expected return value, state change, or output.
 4. **Test Level**: Unit (isolated module), Integration (multi-module seam), or End-to-End.
 
+### Architecture Options & Multi-Proposal Exploration
+
+Before committing to a technical design, evaluate 2 to 3 candidate options:
+- **Option A (Recommended)**: Primary balanced approach delivering requirements cleanly.
+- **Option B (Alternative)**: Minimal-touch / low-risk approach or decouple-first approach with distinct trade-offs.
+- Record the explicit evaluation in `## Architecture Options Comparison` with benefits, costs, risks, and rationale for rejection or adoption.
+
+### Decision Boundaries (Frontal-Lobe Offloading)
+
+- **AI Autonomous Decisions**: Micro-decisions (internal naming, private helpers, algorithm details, unit fixtures) should be resolved autonomously by AI.
+- **Human Gate Decisions**: Macro-decisions (public contract changes, persistence/database migrations, permission/security shifts, destructive scope reductions) must be explicitly flagged for human sign-off.
+
 ---
 
 ## 3. DAG Task Breakdown & Parallel Execution Standards (Tasks)
@@ -71,7 +83,13 @@ flowchart TD
    - Tasks must define isolated `Verification Command`s so each parallel slice can be tested without waiting for unrelated branches.
 4. **Self-Contained Fresh Context**:
    - A developer or agent should be able to pick up an unblocked task and execute it with only the Task Contract, Design Specification, and repository codebase—without needing the entire conversational history.
-5. **Behavior-Preserving Pre-Refactor**:
+5. **Mandatory Task Standard Operating Procedure (Task SOP)**:
+   - Each vertical task slice must declare and execute the 4-step SOP:
+     - **[RED] Test Seam**: Identify public test seam and establish failing automated test.
+     - **[GREEN] Implement**: Minimal implementation to satisfy test assertions.
+     - **[REFACTOR] Clean**: Lint, typing, code review self-check, behavior-preserving cleanup.
+     - **[VERIFY] Validate**: Execute targeted single-task verification command.
+6. **Behavior-Preserving Pre-Refactor**:
    - When existing code structure blocks a clean vertical slice, an explicit Pre-Refactor task may be created as an initial blocking node.
    - Pre-refactors must preserve existing behavior (proven by green regression tests), avoid speculative frameworks, and focus solely on removing the immediate structural obstacle.
 
