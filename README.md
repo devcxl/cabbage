@@ -1,170 +1,128 @@
 # Cabbage
 
-<p align="center">
-  <strong>面向 AI Agent 与现代软件团队的项目文档生命周期与工作流门禁系统</strong>
-</p>
+**小变更一份记录，高风险才增加专项文档。**
 
-<p align="center">
-  <a href="https://github.com/devcxl/cabbage/actions/workflows/cabbage.yml"><img src="https://github.com/devcxl/cabbage/actions/workflows/cabbage.yml/badge.svg" alt="CI & Docs Deployment"></a>
-  <a href="https://devcxl.github.io/cabbage/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue.svg" alt="Online Documentation"></a>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+"></a>
-  <a href="https://vitepress.dev/"><img src="https://img.shields.io/badge/vitepress-1.6.4-646cff.svg" alt="VitePress"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-</p>
+面向 AI Agent 和软件团队的本地文档与变更管理 CLI。使用 Markdown、Git、内容指纹和 CI 门禁，
+不要求每个任务都编写 PRD、技术方案、测试计划和 DAG。
 
----
+[在线文档](https://devcxl.github.io/cabbage/) · [CI 与部署](https://github.com/devcxl/cabbage/actions/workflows/cabbage.yml)
 
-在线文档：[https://devcxl.github.io/cabbage/](https://devcxl.github.io/cabbage/)
+## 安装
 
-核心目标不是“提醒写文档”，而是把需求（PRD）、影响分析、架构设计（RFC/ADR）、API 规范、数据库设计、测试计划和发布方案变成**可执行、可签名验证、不可篡改的 CI 刚性工作流门禁**。
+需要 Python 3.10+ 和 PyYAML；文档站点使用 VitePress，构建需要 Node.js 和 pnpm。
+本项目不发布至公共 PyPI。
 
-```mermaid
-flowchart LR
-    Change[1. cabbage new] --> Artifacts[2. 编写/完善各阶段文档]
-    Artifacts --> Verify[3. cabbage verify 签名校验]
-    Verify --> GateImpl{4. gate implementation}
-    GateImpl -- 通过 --> Coding[5. 代码实现与测试]
-    Coding --> GateMerge{6. gate merge / cabbage ci}
-    GateMerge -- 通过 --> Sync[7. cabbage sync / archive 沉淀至 docs/]
-    Sync --> Deploy[8. VitePress 自动构建部署]
-```
+### Linux / macOS
 
----
-
-## 核心特性
-
-- **刚性工作流门禁**：在编写代码前强制执行 `gate implementation`，检查 PRD、影响分析与架构设计是否完备；PR 合并前强制执行 `gate merge` 与 `cabbage ci` 门禁。
-- **内容签名与防腐化（Anti-Rot）**：每个阶段验证时记录依赖拓扑与内容签名（SHA-256）。一旦上游文档、工作流定义或影响矩阵发生变化，下游已验证阶段自动置为 `stale`。
-- **严格占位符与死链拦截**：`verify` 自动校验 Markdown 结构，严格拒绝遗留的 `TODO`、`TBD`、`FIXME`、未勾选任务 `[ ]` 以及失效的本地链接与锚点。
-- **自动同步与归档沉淀**：执行 `cabbage sync` 或 `cabbage archive` 时，自动将验证通过的变更规范萃取沉淀至 `docs/` 标准文档树，变更历史安全归档至 `.cabbage/archive/`。
-- **存量文档无痛采纳（Adoption）**：提供 `cabbage adopt` 自动扫描清点项目存量文档，支持 `--apply` 一键自动归类与迁移。
-- **现代化 VitePress 驱动**：开箱集成 VitePress 1.6 + Mermaid 图表，极速 Vite 编译与即时搜索，并通过 GitHub Actions 自动持续部署至 GitHub Pages。
-
----
-
-## 安装方式
-
-本项目不发布至公共 PyPI，推荐通过以下方式进行安装：
-
-### 1. 远程一键安装（Linux / macOS，推荐）
-
-自动创建独立隔离虚拟环境并软链至 `~/.local/bin/cabbage`（无需 root 权限，不污染全局 Python 环境）：
+安装脚本创建独立虚拟环境并链接到 `~/.local/bin/cabbage`，无需 root：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/devcxl/cabbage/master/scripts/install.sh | bash
 ```
 
-> **卸载命令**：
-> ```bash
-> curl -fsSL https://raw.githubusercontent.com/devcxl/cabbage/master/scripts/install.sh | bash -s -- --uninstall
-> ```
-
-### 2. Arch Linux 原生包（AUR / PKGBUILD）
+卸载：
 
 ```bash
-# 从仓库 PKGBUILD 本地构建安装
-cd packaging/aur && makepkg -si
-
-# 或通过 AUR Helper 安装
-yay -S cabbage-git
+curl -fsSL https://raw.githubusercontent.com/devcxl/cabbage/master/scripts/install.sh | bash -s -- --uninstall
 ```
 
-### 3. Debian / Ubuntu (.deb 包)
+### 系统包
 
-从 [GitHub Releases](https://github.com/devcxl/cabbage/releases) 下载最新 `.deb` 安装包：
+Arch Linux：在 `packaging/aur` 执行 `makepkg -si`，或使用 `yay -S cabbage-git`。
+Debian / Ubuntu：从 [Releases](https://github.com/devcxl/cabbage/releases) 下载 `.deb`，
+执行 `sudo dpkg -i cabbage_*_all.deb`；缺少依赖时执行 `sudo apt-get install -f`。
 
-```bash
-sudo dpkg -i cabbage_*_all.deb
-# 如缺少依赖可执行：sudo apt-get install -f
-```
+## 快速开始：小变更
 
----
-
-## 快速开始
-
-### 1. 初始化项目
+以下适用于**新初始化项目**。普通 `feature / bugfix / refactor` 默认只需一份 `tasks.md`：
+目标或问题、改动方案、任务、实际验证结果。
 
 ```bash
-cd your-project
 cabbage init
+cabbage new bugfix fix-label
+# 填写 .cabbage/changes/fix-label/tasks.md 的 Goal 和 Design
+cabbage gate fix-label implementation
+# 复现失败 → 最小修复 → 回归测试；完成 Tasks 并填写 Verification 实际结果
+cabbage verify fix-label implementation
+cabbage gate fix-label merge
+# 提交后，在 PR/CI 中检查（替换为实际基线分支）
+cabbage ci --base origin/main
+# 确认合并后再归档
+cabbage archive fix-label
 ```
 
-> 如果项目已有旧文档，运行 `cabbage adopt` 进行存量盘点，或运行 `cabbage adopt --apply` 自动迁移。
+无需额外 PRD、测试计划、DAG 或多方案对比。`change.yaml` 和 `state.json` 是 CLI 管理的元数据，
+“一份记录”指一份人工填写的 Markdown。归档保留该记录，不重复复制到产品和测试目录。
 
-### 2. 变更全生命周期操作
+## 高风险才展开
+
+在实现前声明实际影响。例如下面是一个独立的 API 变更：
 
 ```bash
-# 1. 环境诊断
-cabbage doctor
-
-# 2. 创建新变更（类型可选：feature, architecture, bugfix, hotfix, migration, integration, incident, refactor）
-cabbage new feature add-user-login
-
-# 3. 查看当前变更进度与就绪阶段
-cabbage status add-user-login
-cabbage next add-user-login
-
-# 4. 调整影响分析矩阵（将激活或跳过对应阶段）
-cabbage impact add-user-login --set api=true --set database=true
-
-# 5. 编辑并签名验证阶段文档（自动拒绝 TODO/占位符）
-cabbage verify add-user-login requirement
-cabbage verify add-user-login impact
-cabbage verify add-user-login design
-cabbage verify add-user-login tests
-
-# 6. 实现前门禁检查（确保所有设计与测试计划已就绪）
-cabbage gate add-user-login implementation
-
-# 7. 开始编码与完成实现任务清单（tasks.md 勾选完成）
-cabbage verify add-user-login implementation
-
-# 8. 合并前门禁检查与文档同步
-cabbage validate add-user-login
-cabbage sync add-user-login
-cabbage gate add-user-login merge
-
-# 9. 本地预览/构建文档站点
-cabbage docs dev
-cabbage docs build
-
-# 10. 合并后归档变更
-cabbage archive add-user-login
+cabbage new feature update-api
+cabbage impact update-api --set api=true
+# 填写 tasks.md 的目标与方案，以及新生成的 api-design.md
+cabbage verify update-api api
+cabbage gate update-api implementation
+# 完成代码与测试，填写 tasks.md 实际结果后
+cabbage verify update-api implementation
+cabbage gate update-api merge
+cabbage sync update-api
 ```
 
----
+| 影响标记 | 增加的文档 | 实现前阶段 |
+| --- | --- | --- |
+| `architecture=true` | `adr.md` | `adr` |
+| `api=true` | `api-design.md` | `api` |
+| `database=true` | `database-design.md` | `database` |
+| `security=true` | `security-review.md` | `security` |
+| `deployment=true` | `release-plan.md` | `release` |
 
-## CLI 命令速查
+标记可组合。`deployment=true` 表示需要专项部署/回滚方案的发布，不是每次普通合并。
+专项方案在实现前验证，实际测试和发布验证结果记在 `tasks.md`。
+风险由人或 Agent 声明，CLI 不会从代码自动推断。高风险影响的 CI 当前文档目录规则继续生效；
+已有当前文档失真时仍应修正，不应为凑文件数保留错误信息。
 
-| 命令 | 描述 | 常用选项 |
-| :--- | :--- | :--- |
-| `cabbage init` | 在当前仓库初始化 Cabbage 规范、脚手架与 VitePress 站点 | `--force`, `--no-vendor-cli` |
-| `cabbage doctor` | 诊断系统依赖环境（Python, PyYAML, Git, pnpm）与项目配置健康度 | `--json` |
-| `cabbage adopt` | 扫描并清点现有存量文档，生成迁移分析报告 | `--apply` (自动执行迁移), `--json` |
-| `cabbage new <type> <id>` | 创建指定类型的新变更工作流 | - |
-| `cabbage discard <id>` | 安全废弃并删除未归档的 active 变更 | - |
-| `cabbage status [id]` | 查看指定变更或全局变更的阶段完成与失效状态 | `--json` |
-| `cabbage next <id>` | 计算当前依赖就绪可执行的下一个阶段 | `--json` |
-| `cabbage tasks <id>` | 查看 DAG 任务拓扑、就绪状态或导出 Subagent 派发计划 | `--export-dag`, `--json` |
-| `cabbage impact <id>` | 查询或修改变更影响矩阵（如 API/数据库/安全等） | `--set field=true\|false`, `--json` |
-| `cabbage verify <id> <stage>`| 验证并记录阶段签名（检查占位符、Checklist、死链与 Mermaid） | - |
-| `cabbage gate <id> <target>` | 门禁卡点校验（`implementation` / `merge` / `archive`） | `--json` |
-| `cabbage validate [id]` | 全量校验变更 frontmatter、标题及 Markdown 格式合法性 | `--all`, `--json` |
-| `cabbage sync <id>` | 将当前变更已验证的规范文档自动同步至 `docs/` 树 | `--json` |
-| `cabbage archive <id>` | 校验并通过归档门禁，将变更归档至 `.cabbage/archive/YYYY/` | - |
-| `cabbage ci --base <ref>` | CI 门禁检查：基于 Git diff 强制校验代码变动是否绑定有效变更 | `--base origin/main` |
-| `cabbage docs <action>` | 管理 VitePress 文档站点（`install` / `dev` / `build`） | - |
+`architecture / migration / integration / hotfix / incident` 的独立专项工作流继续保留。
 
----
+## 既有项目兼容
 
-## 门禁落地建议（CI/CD & Governance）
+**既有 `.cabbage/workflows/`、配置和状态不自动迁移，本仓库也保留原工作流。**
+升级 CLI 后，使用 `cabbage status <id>`、`cabbage next <id>` 查看实际阶段。
+旧工作流中的 `requirement / impact / design / tests / implementation` 仍受支持；
+不要把新项目示例直接套用到旧流程，不要使用 `init --force` 升级 CLI，它会覆盖配置与工作流。
 
-1. **分支保护规则**：在 GitHub / GitLab 仓库将 CI 中的 `validate-and-test` 设为保护分支的 **Required Status Check**。
-2. **策略目录保护**：通过 `CODEOWNERS` 对 `.cabbage/workflows/**`、`.cabbage/config.yaml` 及 CI 配置文件设置严格的人工审核权限。
-3. **禁止绕过**：不允许 Agent 或开发者在未经文档阶段验证的情况下直接合并代码变更。详见 `references/enforcement.md`。
+本仓库唯一 CLI 源码是 `cabbage_cli/`。执行 `python scripts/sync-vendor.py` 生成
+`.cabbage/tooling/cabbage_cli/`；完整测试与 CI 检查文件一致性，避免手工维护两份代码。
 
----
+## 能力与边界
+
+- `verify`：检查结构、占位符、清单、链接和 Mermaid 围栏，记录内容指纹。
+- `status / next / gate`：显示状态、就绪阶段与门禁；验证后内容或依赖变化会使阶段 `stale`。
+- `validate`：检查草稿结构与链接，不要求所有任务已经完成。
+- `sync`：复制有映射的文档，不做语义合并，也不检查阶段验证状态；发布前先通过 `gate merge`。
+- `archive`：先检查门禁，再同步和移动到 `.cabbage/archive/`；不检查 Git 合并状态。
+- `ci`：检查提交差异中的变更绑定、门禁及适用的当前文档规则；不自行构建站点。
+- `adopt`：盘点已有文档，确认迁移建议后再用 `--apply`。
+- `docs dev / build`：预览和构建 VitePress 站点。
+- `tasks --export-dag`：可选的任务派发数据导出，不执行任务，不是小变更的前置要求。
+
+内容指纹不是身份签名，也不证明文档语义正确或记录不可篡改。
+应在托管平台配置必要的分支保护、人工审批和策略文件所有权。
+
+详细操作见 [SKILL.md](SKILL.md)、[CLI 参考](references/cli.md)、[风险分类](references/decision-tree.md)
+和 [门禁保护](references/enforcement.md)。
+
+## 验证
+
+```bash
+python scripts/sync-vendor.py
+python -m unittest discover tests
+python -m cabbage_cli validate --all
+pnpm --dir docs run build
+git diff --check
+```
 
 ## License
 
-[MIT](LICENSE) © devcxl
+MIT © devcxl

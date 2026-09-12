@@ -15,10 +15,17 @@ cabbage status
 cabbage next <change-id>
 ```
 
-`requirement` 对应 `prd.md`，`design` 对应 `tech-spec.md`，`tests` 对应
-`test-plan.md`，`implementation` 对应 `tasks.md`；专项阶段使用 `adr`、`api`、
-`database`、`security`、`release`、`rfc`、`incident`、`postmortem`。
-以当前项目 `status` / `next` 输出为准，跳过未启用的阶段。
+新初始化项目的 `feature / bugfix / refactor` 默认只有 `implementation` 阶段的一份
+`tasks.md`，包含 Goal、Design、Tasks、Verification。先写目标与方案，实现后填实际验证结果，
+再验证 `implementation`；不额外生成 PRD、测试计划、DAG 或重复 SOP。
+
+实现前声明高风险影响：`architecture / api / database / security / deployment` 分别增加
+`adr / api / database / security / release` 专项阶段及实现前门禁。普通发布不必标记 deployment，
+需要专项部署/回滚方案时才启用。风险不会由 CLI 自动识别，不能为少写文档而隐瞒实际影响。
+
+既有项目的工作流不会自动迁移。旧流程中 `requirement` 对应 `prd.md`，`design` 对应
+`tech-spec.md`，`tests` 对应 `test-plan.md`，`implementation` 对应 `tasks.md`。
+以当前项目 `status` / `next` 输出为准，不将旧阶段名套用到新轻量流程。
 
 ## 基本操作
 
@@ -36,7 +43,8 @@ cabbage next <change-id>
 2. 通过 `impact --set` 声明相关影响，根据 `next` 顺序填写和验证已启用阶段。
 3. 开始实现前运行 `gate implementation`，有阻塞时先处理缺失或失效的前置材料。
 4. 完成任务并记录实际测试命令及结果，再验证 `implementation`；不要提前勾选任务。
-5. 验证剩余阶段，更新受影响的当前文档，检查合并门禁。
+5. 验证剩余阶段，检查合并门禁。新轻量流程的产品目标和测试证据留在记录中，不为这两项
+   另建当前文档；高风险专项文档仍按 CI 规则发布，已有失真的当前文档仍需修正。
 
 ```bash
 cabbage gate <change-id> implementation

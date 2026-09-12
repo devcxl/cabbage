@@ -61,7 +61,7 @@ Create a new active change workspace under `.cabbage/changes/<change-id>/`.
 - **Arguments**:
   - `<type>`: `feature` | `architecture` | `bugfix` | `hotfix` | `refactor` | `migration` | `integration` | `incident`
   - `<change-id>`: Unique identifier in kebab-case (e.g., `user-oauth-login`).
-- **Behavior**: Creates `change.yaml` and enabled workflow artifacts. `state.json` is created on first successful verification. Use `status` or `next` to inspect stages.
+- **Behavior**: Creates `change.yaml` and enabled workflow artifacts. `state.json` is created on first successful verification. New projects use one `tasks.md` for `feature`, `bugfix`, and `refactor`; risk flags add only related specialist documents. Existing project workflows are not automatically upgraded. Use `status` or `next` to inspect actual stages.
 
 ```bash
 cabbage new feature user-oauth-login
@@ -98,6 +98,7 @@ cabbage impact user-oauth-login --set api=true --set database=true
 
 #### `cabbage tasks <change-id> [--export-dag] [--json]`
 Inspect DAG task topology, checklist progress, dependencies, and readiness for parallel execution.
+Simple checklists under `# Tasks` work without a DAG or repeated Task SOP. Structured DAG export is optional and does not execute tasks.
 - **Flags**:
   - `--json`: Output full parsed task objects, DAG topology, and parallel groups as structured JSON.
   - `--export-dag`: Output machine-readable subagent dispatch plan with unblocked tasks and execution prompts for parallel worker threads.
@@ -131,10 +132,10 @@ Verify a single stage artifact, check content completeness, ensure no placeholde
   - Mermaid diagram syntax fences are closed.
 
 ```bash
-# Use the stage IDs returned by `cabbage next`, not artifact filenames.
-cabbage verify user-oauth-login requirement
-# After required dependencies and implementation work are complete:
+# Use stage IDs returned by `next`, not artifact filenames.
+# A new project's ordinary feature needs only this after implementation and tests:
 cabbage verify user-oauth-login implementation
+# If api=true, verify `api` before starting implementation, then verify implementation again.
 ```
 
 #### `cabbage validate [<change-id> | --all] [--json]`
@@ -177,7 +178,7 @@ cabbage archive user-oauth-login
 ```
 
 #### `cabbage ci --base <git-ref>`
-Inspect `<base>...HEAD`, require an active changed change record for code changes, and validate changed active records, their merge gates, and configured current-document paths. It neither validates every unchanged active record nor runs a documentation build; run `validate --all` and `docs build` separately.
+Inspect `<base>...HEAD`, require an active changed change record for code changes, and validate changed active records, their merge gates, and configured current-document paths. New lightweight workflows declare `record_covers: [product, testing]`, so these two areas need no duplicate docs-path changes. Other impact rules remain enforced, and old workflows retain their existing rules. It neither validates every unchanged active record nor runs a documentation build; run `validate --all` and `docs build` separately.
 
 ```bash
 cabbage ci --base origin/main

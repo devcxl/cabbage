@@ -1,85 +1,48 @@
-# Workflow & Change Type Decision Tree
+# 变更类型与风险
 
-This guide defines how to classify changes, dispatch appropriate workflow paths, and activate conditional artifacts in Cabbage.
+## 普通变更
 
----
+新初始化项目的 `feature`（功能）、`bugfix`（修复）、`refactor`（重构）使用同一轻量路径：
+一份 `tasks.md`，记录目标或问题、方案、任务和实际验证结果。
 
-## 1. Scenario Dispatch Matrix (Phase 0)
+- 功能：写清可观察的验收标准。
+- 修复：先复现失败，再最小修复并验证回归。
+- 重构：说明保持不变的行为及测试保护。
 
-Before creating a change workspace, evaluate the input against the 10 scenario archetypes:
+不要求单独 PRD、技术方案、测试计划、DAG 或多方案对比。纯文档调整可直接更新归属文档，
+按项目策略检查链接和构建。
 
-| Scenario Archetype | Key Characteristics | Cabbage Change Type | Execution Path | Key Actions & Exit Criteria |
-|---|---|---|---|---|
-| **New Capability / Feature** | User-visible or new business capabilities | `feature` | Full Lifecycle | PRD -> Tech Spec -> Tasks -> Implementation -> Dual-Axis Review -> Merge |
-| **Bug / Regression** | Defect in merged code or non-outage regression | `bugfix` | Lightweight Corrective | Reproduce -> Failing Test (RED) -> Minimal Fix (GREEN) -> Regression Verify |
-| **Production Incident / Hotfix** | P0/P1 live outage or urgent production patch | `hotfix` or `incident` | Fast-Track Patch | Patch from release tag -> Minimal Fix -> Release PR -> Rollback plan |
-| **Business Adjustment** | Minor adjustments to existing behavior/fields | `feature` or `bugfix` | Change Management | Impact analysis -> Backward compatibility check -> Update spec -> Implement |
-| **Refactoring** | Internal restructuring without behavior changes | `refactor` | Behavior-Preserving | Test safety net -> Stepwise refactor -> Differential/snapshot parity check |
-| **Tech Debt Cleanup** | Dead code, obsolete configs, unused assets | `refactor` | Behavior-Preserving Removal | Inventory unused assets -> Verify consumer references -> Delete -> Full regression |
-| **Infrastructure Change** | CI/CD, build tools, package dependencies | `integration` or `refactor` | CI-as-Acceptance | Small incremental steps -> Push to CI -> Verify build pipeline & regression |
-| **Documentation Update** | Standalone docs updates, runbooks, guides | `feature` or direct docs | Docs-as-Code | Update canonical docs -> Terminology check -> Docs build verify (`cabbage docs build`) |
-| **Rollback & Recovery** | Failed deployment, critical release issue | `hotfix` | Controlled Rollback | Revert PR -> Create root-cause corrective change -> Clean worktrees |
-| **Technical Research** | Tech evaluation, spike, architectural study | `architecture` | Evidence-Driven | Frame hypothesis -> Conduct research/POC -> Document findings & trade-offs |
+## 何时增加专项文档
 
----
-
-## 2. Classification Decision Tree
-
-```text
-Change Intake
-│
-├── Adds new business capability or user-visible feature?
-│   └── -> Type: `feature` (Full lifecycle)
-│
-├── Alters system boundaries, runtime topology, major tech stack, or distributed protocols?
-│   └── -> Type: `architecture` (Tech Spec + ADR + Topology)
-│
-├── Corrects a non-production-outage functional defect or regression?
-│   └── -> Type: `bugfix` (Lightweight corrective path)
-│
-├── Urgent production patch requiring rapid hot-patching?
-│   └── -> Type: `hotfix` (Fast-track release path)
-│
-├── Internal structural refactoring without external behavioral changes?
-│   └── -> Type: `refactor` (Behavior-preserving path)
-│
-├── Database schema evolution, data backfill, or platform/runtime migration?
-│   └── -> Type: `migration` (Schema + Rollback + Data safety)
-│
-├── Connecting with third-party APIs, webhooks, or external SaaS platforms?
-│   └── -> Type: `integration` (API Design + Security Review)
-│
-└── Production incident response, post-mortem, and corrective action tracking?
-    └── -> Type: `incident` (Timeline + 5-Why Postmortem)
-```
-
----
-
-## 3. Impact Analysis Matrix & Conditional Activation
-
-Impact analysis determines which conditional stages are activated in active change workflows. Run:
+实现前评估实际风险，使用现有影响标记，不新增复杂度档位：
 
 ```bash
-cabbage impact <change-id> --set <field>=true|false
+cabbage impact <change-id> --set api=true --set security=true
+cabbage next <change-id>
 ```
 
-| Impact Field | When to Enable (`true`) | Activated Artifact / Stage |
-|---|---|---|
-| `product` | Changes product behavior, user workflows, or UI/UX | `prd` |
-| `architecture` | Introduces new components, alters boundaries, or introduces ADRs | `tech-spec`, `adr` |
-| `api` | Modifies REST/GraphQL/gRPC interfaces, DTOs, or webhooks | `api-design` |
-| `database` | Adds/modifies tables, fields, indexes, or requires data backfill | `database-design` |
-| `security` | Touches auth, permissions, secrets, PII, or attack surface | `security-review` |
-| `testing` | Requires special test scenarios, load testing, or E2E suites | `test-plan` |
-| `deployment` | Involves infra changes, env vars, migrations, or release steps | `release-plan` |
-| `operations` | Changes logging, alerting, metrics, or runbooks | `runbooks` |
-| `data` | Alters data pipelines, ETL, caching, or event streaming | `data-flow` |
-| `performance` | Performance-critical changes, latency/throughput requirements | `benchmark` |
+| 标记 | 适用情况 | 新轻量工作流增加的阶段 / 文档 |
+| --- | --- | --- |
+| `architecture` | 组件边界、拓扑、关键架构决策变化 | `adr` / `adr.md` |
+| `api` | 外部接口契约、消息格式、兼容性变化 | `api` / `api-design.md` |
+| `database` | 表结构、索引、迁移或数据安全变化 | `database` / `database-design.md` |
+| `security` | 权限、认证、隐私、密钥或信任边界变化 | `security` / `security-review.md` |
+| `deployment` | 需要专项部署顺序、回滚或上线验证的发布 | `release` / `release-plan.md` |
 
----
+多个标记可同时启用。专项材料在实现前验证，`gate implementation` 通过后再开始实现。
+计划中的验证方法写在专项文档，真实执行结果写在 `tasks.md`，不要在实现前伪造测试结果。
 
-## 4. Operational Principles
+`product` 与 `testing` 的内容由单份记录承载，不触发重复的当前文档要求。
+`operations / data / performance` 不自动生成新阶段，仍适用项目配置中的当前文档目录规则；
+如果同时涉及数据库、安全等风险，应同时声明对应标记。CLI 不从代码自动推断风险。
 
-1. **Lightweight Paths for Non-Feature Scenarios**: For bugfixes, tech debt cleanups, or refactoring, avoid heavy PRD ceremonies unless the root cause stems from architectural flaws.
-2. **Never Create Redundant Standalone Docs**: Activate conditional stages within the managed change workflow and sync them to `docs/`.
-3. **Cascading Invalidation Awareness**: Changing impact flags triggers downstream stages to become `stale`. Always inspect ready stages with `cabbage next <change-id>`.
+## 保留的专项工作流
+
+`architecture`、`migration`、`integration`、`hotfix`、`incident` 继续使用其专项流程，
+阶段和默认影响以项目 `.cabbage/workflows/<type>.yaml` 和 `next` 输出为准。
+不要假设任何影响字段都能凭空增加一个工作流未定义的阶段。
+
+## 旧项目
+
+升级 CLI 或重新生成副本不会更新项目工作流、配置、历史和已验证状态。
+旧项目继续使用原阶段；迁移需另行评估活动变更和签名失效，不使用 `init --force` 自动切换。

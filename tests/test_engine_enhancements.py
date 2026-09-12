@@ -6,7 +6,8 @@ import sys
 from tempfile import TemporaryDirectory
 import unittest
 
-from cabbage_cli.scaffold import init_project, new_change, adopt_project, discard_change
+from cabbage_cli.scaffold import new_change, adopt_project, discard_change
+from support import init_legacy_project as init_project
 from cabbage_cli.core import (
     CabbageError,
     verify_stage,

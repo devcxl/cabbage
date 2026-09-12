@@ -45,6 +45,18 @@ flowchart TD
 
 项目级配置位于 `.cabbage/config.yaml`；工作流位于 `.cabbage/workflows/`；完成全部阶段的变更移动到 `.cabbage/archive/<year>/`。
 
+## 新项目轻量工作流
+
+内置 `feature / bugfix / refactor` 默认用 `change-record.md` 模板生成单份 `tasks.md`。
+架构、API、数据库、安全和高风险发布阶段按现有影响字段启用，排列在 `implementation` 之前，
+实现阶段依赖所有这些可选阶段；复用原有门禁和失效传播，不引入第二套状态机。
+
+新工作流声明 `record_covers: [product, testing]`，CI 不再为这两项要求重复的当前文档改动。
+其他影响目录规则不变。记录归档后仍保留在历史中，不额外添加实现阶段的同步映射。
+
+新默认仅用于初始化。仓库自身 `.cabbage/workflows/` 及既有项目继续使用原有流程；
+旧流程通过冻结的测试 fixture 验证兼容性，不因测试新默认而丢弃旧行为覆盖。
+
 ## 状态与签名
 
 阶段签名由以下内容的 SHA-256 摘要组成：
@@ -67,7 +79,8 @@ flowchart TD
 - Mermaid 代码围栏闭合；
 - `implementation` 清单存在且没有未勾选任务。
 
-验证通过后，可随时通过 `cabbage sync` 将阶段规范同步沉淀至 `docs/`，或在 `cabbage archive` 时由 CLI 自动完成同步沉淀。
+`sync` 按映射复制已启用且存在的产物，不检查验证状态或合并文档语义；发布前应先通过合并门禁。
+`archive` 会先检查阶段门禁再同步和归档，但不检查 Git 合并状态。
 
 ## 门禁边界
 
@@ -75,4 +88,4 @@ flowchart TD
 - `merge` 和 `archive` 检查全部已启用阶段。
 - `ci` 在 Git diff 基础上检查代码变更是否绑定活跃变更，并按影响范围要求更新相应当前状态文档。
 
-核心运行依赖仅为 Python 3.10+ 与 PyYAML。VuePress、Mermaid、Node.js 和 pnpm 只服务于文档站点预览与构建，不进入 CLI 的核心执行路径。
+核心运行依赖仅为 Python 3.10+ 与 PyYAML。VitePress、Mermaid、Node.js 和 pnpm 只服务于文档站点预览与构建，不进入 CLI 的核心执行路径。

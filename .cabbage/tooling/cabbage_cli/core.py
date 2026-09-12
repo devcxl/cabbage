@@ -450,8 +450,12 @@ def ci_check(root: Path, base: str) -> list[str]:
         errors.extend(f"{cid}: merge gate: {e}" for e in gate(root,cid,"merge"))
         if cfg.get("ci",{}).get("require_current_state_docs",True):
             spec=change_spec(root,cid)
+            wf,_=workflow(root,spec["type"])
+            record_covers=wf.get("record_covers",[])
             rules=cfg.get("ci",{}).get("current_state_rules",{})
             for area,prefixes in rules.items():
+                if area in record_covers:
+                    continue
                 if spec.get("impact",{}).get(area,False) and not any(any(f.startswith(prefix) for prefix in prefixes) for f in files):
                     errors.append(f"{cid}: impact `{area}=true` requires a current-state docs change under: {', '.join(prefixes)}")
     return errors

@@ -19,6 +19,13 @@ A change progresses through two top-level states:
 
 ## 2. Stage State Machine
 
+New projects use a single `implementation` stage backed by `tasks.md` for ordinary
+features, fixes, and refactors. Risk flags enable specialist stages before it;
+without those flags the implementation gate has no prerequisites. The merge gate
+still requires the completed and verified record. Existing project workflows are
+not migrated. The record is retained in the archive, not copied into product and
+testing directories.
+
 Each workflow stage inside a change has one of four derived states:
 
 ```mermaid

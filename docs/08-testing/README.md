@@ -21,6 +21,9 @@ git diff --check
 - `test_templates.py`：模板标题契约。
 - `test_tasks_dag.py`：可选 DAG 解析与派发数据。
 - `test_repository_contracts.py`：指南使用真实阶段 ID；副本所有文件与主实现一致。
+- `test_lightweight_workflows.py`：三种轻量流程单份记录、五类风险独立激活、门禁与失效传播、
+  CLI/Git CI/同步/归档链路，以及更新副本不改写旧工作流与签名。
+- `fixtures/legacy-feature.yaml`：冻结升级前的 feature 工作流，旧门禁回归继续使用该契约。
 
 修改 `cabbage_cli/` 后执行 `python scripts/sync-vendor.py`，不要手动修改
 `.cabbage/tooling/cabbage_cli/`。完整测试套件与 CI 会检查副本漂移。

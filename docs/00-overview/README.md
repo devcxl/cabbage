@@ -1,72 +1,45 @@
 # 项目概览
 
-Cabbage 是一个以变更为中心的文档门禁 CLI。它把需求、设计、测试、发布和事故文档纳入可验证的工作流，使文档状态能够阻止过早实现、合并或归档。
+Cabbage 是本地文档与变更管理 CLI：**小变更一份记录，高风险才增加专项文档。**
 
-## 核心目标
-
-- 让代码变更与对应文档在同一个变更记录中演进。
-- 根据变更类型和影响范围激活必要文档，避免所有变更套用同一套清单。
-- 以内容签名识别上游文档变化，并把依赖阶段自动标记为 `stale`。
-- 在完成阶段拒绝空模板、错误元数据、断裂链接和未完成任务。
-- 通过 CI 检查变更绑定、当前状态文档和合并门禁。
-
-## 工作方式
-
-```mermaid
-flowchart LR
-    A[初始化项目] --> B[创建变更]
-    B --> C[评估影响范围]
-    C --> D[编写并完成文档阶段]
-    D --> E[通过 implementation gate]
-    E --> F[完成实现与验证]
-    F --> G[通过 merge gate]
-    G --> H[归档变更记录]
-```
-
-典型命令序列如下：
+## 新项目的最短路径
 
 ```bash
 cabbage init
-cabbage new feature add-user-login
-cabbage impact add-user-login --set architecture=true
-cabbage next add-user-login
-cabbage verify add-user-login requirement
-cabbage gate add-user-login implementation
-cabbage validate add-user-login
-cabbage sync add-user-login
-cabbage gate add-user-login merge
-cabbage archive add-user-login
+cabbage new bugfix fix-label
+# 填写 tasks.md 的目标、方案，确认没有需要声明的专项风险
+cabbage gate fix-label implementation
+# 复现、修复、测试后，完成任务并写入实际验证结果
+cabbage verify fix-label implementation
+cabbage gate fix-label merge
+# 提交后执行 CI；确认合并后归档
+cabbage archive fix-label
 ```
 
-## 文档模型
+新初始化项目的 `feature / bugfix / refactor` 只需一份人工填写的 `tasks.md`。
+`change.yaml` 和 `state.json` 由 CLI 管理。不强制额外 PRD、测试计划、DAG 或多方案比较。
 
-Cabbage 管理三类信息：
+## 按风险展开
 
-- 当前状态文档：描述系统现在的行为，稳定存放在 `docs/` 并原地更新。
-- 变更过程文档：存放在 `.cabbage/changes/<change-id>/`，记录单次变更从需求到发布的证据。
-- 决策历史文档：RFC、ADR、事故报告和复盘等长期记录，通过替代或归档保留历史，不覆盖原有结论。
+实现前用 `impact --set` 声明架构、外部 API、数据库、安全或高风险发布影响，
+工具分别增加 ADR、API、数据库、安全和发布方案。相关阶段验证通过后才允许实现。
+风险由使用者判断，不会从代码自动识别。已有文档失真时仍需修正。
 
-## 技术基线
+`architecture / migration / integration / hotfix / incident` 保留专项流程。
 
-- 运行时：Python 3.10 及以上。
-- 运行依赖：PyYAML 6.0 及以上。
-- 文档站点：VuePress，使用 Mermaid 渲染可审查图表。
-- 自动化：GitHub Actions、Node.js 22、pnpm 10。
-- 命令入口：`cabbage`，Python 模块入口为 `python -m cabbage_cli`。
+## 旧项目保持原样
 
-## 关键目录
+既有项目的 `.cabbage/workflows/`、配置、历史与验证状态不会自动迁移。本仓库也保留旧流程。
+使用 `cabbage status` / `cabbage next <id>` 查看实际阶段，不将新项目示例直接套用到旧项目。
+不要使用 `init --force` 升级 CLI，它会覆盖项目配置与工作流。
 
-| 路径 | 职责 |
-| --- | --- |
-| `cabbage_cli/` | CLI、工作流核心和项目脚手架源码 |
-| `cabbage_cli/assets/templates/` | 变更文档模板 |
-| `cabbage_cli/assets/workflows/` | 各类变更的阶段定义 |
-| `.cabbage/changes/` | 活跃变更及其状态 |
-| `.cabbage/workflows/` | 当前项目采用的工作流 |
-| `.cabbage/archive/` | 已归档的变更历史 |
-| `.cabbage/tooling/` | 供项目和 CI 使用的 vendored CLI |
-| `docs/` | 当前状态文档和 VuePress 站点 |
+## 文档与技术边界
 
-## 边界
+变更记录描述单次改动，当前文档描述系统现在的行为，历史决策保留背景和取舍。
+`sync` 只复制有映射的文件，不做语义整合或验证状态检查；发布前先通过合并门禁。
+轻量记录归档到 `.cabbage/archive/`，不额外复制到产品和测试目录。
 
-Cabbage 负责验证文档契约和工作流状态，不替代人工评审。模板是否被填写只能证明结构完整、占位已处理；内容是否正确、方案是否合理，仍需代码所有者和领域负责人审核。
+运行时为 Python 3.10+、PyYAML；站点为 VitePress、Mermaid；CI 使用 GitHub Actions。
+唯一 CLI 源码在 `cabbage_cli/`，`python scripts/sync-vendor.py` 生成仓库副本，测试检查一致性。
+
+内容指纹用于识别验证后的变化，不证明文档质量、审批身份或记录不可篡改。

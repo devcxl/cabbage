@@ -1,115 +1,53 @@
-# Document Types & Template Specifications
+# 文档类型
 
-This reference specifies the purpose, required sections, structural rules, DAG task breakdown standards, and anti-rot criteria for every document type managed by Cabbage.
+## 默认：一份变更记录
 
----
+新项目的 `feature / bugfix / refactor` 使用 `change-record.md` 模板生成 `tasks.md`，
+阶段 ID 为 `implementation`。必须包含：
 
-## 1. Document Specification Matrix
+| 标题 | 内容 |
+| --- | --- |
+| `Goal` | 目标或已复现问题、范围、验收标准 |
+| `Design` | 最小改动方案和风险，必要时声明专项影响 |
+| `Tasks` | 实际任务清单，实现完成后才勾选 |
+| `Verification` | 真实执行命令与结果，修复需包含失败复现与通过回归 |
 
-| Document | Purpose | Target Path | Required Headings | Lifecycle Rule |
-|---|---|---|---|---|
-| **PRD** (`prd.md`) | Product vision, user stories, functional scope, acceptance criteria | `.cabbage/changes/<id>/prd.md` -> `docs/01-product/` | `## Background & Goals`, `## User Stories`, `## Functional Requirements`, `## Non-Functional Requirements`, `## Acceptance Criteria` | Current state |
-| **Tech Spec** (`tech-spec.md`) | Technical architecture, component boundaries, testing decisions, failure modes | `.cabbage/changes/<id>/tech-spec.md` -> `docs/03-architecture/system-design/` | `## Context & Problem Statement`, `## Architecture & Component Design`, `## Testing Decisions`, `## Data Flow & Sequence`, `## Failure Handling & Resilience` | Current state |
-| **Tasks** (`tasks.md`) | Directed Acyclic Graph (DAG) of vertical tracer-bullet tasks and checklist items | `.cabbage/changes/<id>/tasks.md` | `## Preparation`, `## Tasks`, `## Verification`, checklist items `- [ ]` | Change workspace |
-| **ADR** (`adr.md`) | Architectural decision records with rationale, options, and consequences | `.cabbage/changes/<id>/adr.md` -> `docs/03-architecture/adr/ADR-<num>-<title>.md` | `## Context`, `## Decision`, `## Consequences` (Positive & Negative) | Immutable historical (supersede if changed) |
-| **RFC** (`rfc.md`) | Design proposal for cross-team feedback and consensus | `.cabbage/changes/<id>/rfc.md` -> `docs/03-architecture/rfc/RFC-<num>-<title>.md` | `## Summary`, `## Motivation`, `## Detailed Design`, `## Drawbacks & Alternatives` | Immutable historical |
-| **API Design** (`api-design.md`) | REST/gRPC/GraphQL endpoints, request/response models, error codes | `.cabbage/changes/<id>/api-design.md` -> `docs/05-api/` | `## Overview`, `## Endpoints / Schema`, `## Authentication & Headers`, `## Error Codes & Handling` | Current state |
-| **Database Design** (`database-design.md`) | Schema changes, indexes, constraints, migration & rollback steps | `.cabbage/changes/<id>/database-design.md` -> `docs/04-data/database-design/` | `## Schema Changes`, `## Indexes & Constraints`, `## Migration Strategy`, `## Rollback & Data Safety` | Current state |
-| **Security Review** (`security-review.md`) | Threat modeling, permission boundaries, PII, secrets handling | `.cabbage/changes/<id>/security-review.md` -> `docs/09-security/` | `## Attack Surface & Threat Model`, `## Authentication & Authorization`, `## Sensitive Data & Encryption`, `## Mitigations` | Current state |
-| **Test Plan** (`test-plan.md`) | Test matrix, test seam verification, regression & non-functional coverage | `.cabbage/changes/<id>/test-plan.md` -> `docs/08-testing/` | `## Test Strategy & Scope`, `## Test Cases & Scenarios`, `## Regression & Non-Functional Testing` | Change workspace |
-| **Release Plan** (`release-plan.md`) | Deployment ordering, environment config, verification, rollback triggers | `.cabbage/changes/<id>/release-plan.md` -> `docs/12-release/` | `## Deployment Sequence`, `## Configuration & Environment`, `## Verification Steps`, `## Rollback Procedure` | Change workspace |
-| **Runbook** (`runbook.md`) | Actionable step-by-step operational and troubleshooting guide | `docs/13-operations/runbooks/` | `## Overview`, `## Prerequisites`, `## Step-by-Step Execution`, `## Verification`, `## Troubleshooting & Rollback` | Current state |
-| **Incident Postmortem** (`postmortem.md`) | Post-incident analysis, 5-Why root cause, systemic corrective actions | `.cabbage/changes/<id>/postmortem.md` -> `docs/15-incidents/` | `## Summary & Impact`, `## Timeline`, `## Root Cause (5-Why Analysis)`, `## Corrective & Preventative Actions` | Immutable historical |
+开始实现前写目标和方案，实现后补验证结果。门禁不会审查自然语言是否正确。
+不需要单独 PRD、测试计划或每个任务重复四步 SOP。
+记录保留在 `.cabbage/changes/<id>/`，归档后位于 `.cabbage/archive/<year>/<id>/`，
+不重复复制进产品和测试目录。`change.yaml` 和 `state.json` 是机器管理的元数据。
 
----
+## 高风险文档
 
-## 2. Deep Module & Testing Decisions Standards (Tech Spec)
+按影响激活，不为凑齐目录而创建文件：
 
-Technical specifications must describe verifiable, testable system boundaries using the following design language:
+| 阶段 ID | 文件 | 新轻量流程必需标题 | 默认同步目录 |
+| --- | --- | --- | --- |
+| `adr` | `adr.md` | Context, Decision, Consequences | `docs/03-architecture/adr/` |
+| `api` | `api-design.md` | Contract, Compatibility | `docs/05-api/` |
+| `database` | `database-design.md` | Schema, Migration, Rollback | `docs/04-data/` |
+| `security` | `security-review.md` | Threats, Controls | `docs/09-security/` |
+| `release` | `release-plan.md` | Deployment, Rollback, Verification | `docs/12-release/` |
 
-- **Module**: A bounded component with a clear Interface and Implementation.
-- **Interface**: The minimal contract required to use the Module (inputs, outputs, errors, side effects).
-- **Test Seam**: A public interface boundary where behavior is observed or replaced during testing.
-- **Depth**: A module is deep when its Interface is small and simple, but encapsulates significant complexity behind it. Avoid shallow "pass-through" layers.
-- **No Mock-Driven Abstractions**: Do not introduce interfaces or adapter layers solely to facilitate unit test mocking when only a single production implementation exists.
+这些阶段在新轻量流程中位于 `implementation` 之前。发布方案写待执行的步骤与验证方法，
+不要提前宣称执行成功；真实结果记入变更记录。
+默认同步文件名为 `<change-id>.md`，不是自动分配 ADR 编号。
 
-### Mandatory `## Testing Decisions` Section
+## 旧项目和专项工作流
 
-Every non-trivial `tech-spec.md` must declare:
-1. **Target Behavior**: The specific capability or requirement to verify.
-2. **Public Test Seam**: The exact public interface or entry point used to exercise the behavior.
-3. **Observable Outcome**: The expected return value, state change, or output.
-4. **Test Level**: Unit (isolated module), Integration (multi-module seam), or End-to-End.
+原有 `prd.md`、`impact.md`、`tech-spec.md`、`test-plan.md`、`tasks.md`、RFC、事故与复盘
+模板继续保留。实际必需标题取自项目工作流的 `required_headings`，不是一份全局标题清单。
+旧项目默认流程不随 CLI 升级改变。
 
-### Architecture Options & Multi-Proposal Exploration
+## 可选 DAG
 
-Before committing to a technical design, evaluate 2 to 3 candidate options:
-- **Option A (Recommended)**: Primary balanced approach delivering requirements cleanly.
-- **Option B (Alternative)**: Minimal-touch / low-risk approach or decouple-first approach with distinct trade-offs.
-- Record the explicit evaluation in `## Architecture Options Comparison` with benefits, costs, risks, and rationale for rejection or adoption.
+仅在多任务确有依赖或需要派发时使用 `## Task <id>: <title>` 分节，以及
+`Builds`、`Blocked By`、`Parallel Group`、`Verification` 字段。
+`cabbage tasks --export-dag` 输出派发数据，不调度执行任务。
+普通 `# Tasks` 下的清单同样支持 `cabbage tasks`，不需要 Mermaid 图。
 
-### Decision Boundaries (Frontal-Lobe Offloading)
+## 当前事实与历史
 
-- **AI Autonomous Decisions**: Micro-decisions (internal naming, private helpers, algorithm details, unit fixtures) should be resolved autonomously by AI.
-- **Human Gate Decisions**: Macro-decisions (public contract changes, persistence/database migrations, permission/security shifts, destructive scope reductions) must be explicitly flagged for human sign-off.
-
----
-
-## 3. DAG Task Breakdown & Parallel Execution Standards (Tasks)
-
-Task breakdown in `tasks.md` translates the technical specification into an executable **Directed Acyclic Graph (DAG)** of vertical tracer-bullet tasks.
-
-```mermaid
-flowchart TD
-    Phase1["Phase 1: Baseline / Pre-Refactor"] --> TaskA["Task A: Vertical Slice 1 (Auth)"]
-    Phase1 --> TaskB["Task B: Vertical Slice 2 (Profile)"]
-    TaskA --> TaskC["Task C: Vertical Slice 3 (Billing)"]
-    TaskB --> TaskD["Task D: Vertical Slice 4 (Notifications)"]
-    TaskC --> Convergence["Phase 3: Integration & Convergence"]
-    TaskD --> Convergence
-```
-
-### Core Principles of DAG Task Decomposition
-
-1. **Vertical Tracer-Bullet Slices**:
-   - Each task delivers an end-to-end observable capability traversing all required technical layers (e.g. storage, logic, API, UI).
-   - Never split tasks horizontally by technology layers (e.g. avoid `create-table` -> `write-service` -> `write-controller`).
-2. **Directed Acyclic Graph (DAG) Dependencies**:
-   - Every task explicitly specifies its prerequisites via `Blocked By: <Task ID | None>`.
-   - **True Blocking Only**: A task must depend on another task *only* if it cannot physically or logically start before the predecessor finishes.
-   - **Strictly Acyclic**: Circular dependencies (`A -> B -> A`) are strictly prohibited.
-3. **Maximizing Parallel Execution**:
-   - Tasks residing in independent branches of the DAG can and should be executed in parallel (e.g. by isolated subagents or developer threads in fresh contexts).
-   - Tasks must define isolated `Verification Command`s so each parallel slice can be tested without waiting for unrelated branches.
-4. **Self-Contained Fresh Context**:
-   - A developer or agent should be able to pick up an unblocked task and execute it with only the Task Contract, Design Specification, and repository codebase—without needing the entire conversational history.
-5. **Mandatory Task Standard Operating Procedure (Task SOP)**:
-   - Each vertical task slice must declare and execute the 4-step SOP:
-     - **[RED] Test Seam**: Identify public test seam and establish failing automated test.
-     - **[GREEN] Implement**: Minimal implementation to satisfy test assertions.
-     - **[REFACTOR] Clean**: Lint, typing, code review self-check, behavior-preserving cleanup.
-     - **[VERIFY] Validate**: Execute targeted single-task verification command.
-6. **Behavior-Preserving Pre-Refactor**:
-   - When existing code structure blocks a clean vertical slice, an explicit Pre-Refactor task may be created as an initial blocking node.
-   - Pre-refactors must preserve existing behavior (proven by green regression tests), avoid speculative frameworks, and focus solely on removing the immediate structural obstacle.
-
-### Task Anti-Patterns
-
-| Anti-Pattern | Bad Example | Correct Approach |
-|---|---|---|
-| **Horizontal Layering** | Task 1: Add DB migration -> Task 2: Implement Service -> Task 3: Add API controller | Task 1: Complete end-to-end vertical slice (e.g. `create-and-persist-session`) |
-| **Separating Tests** | Task 1: Write feature code -> Task 2: Write tests in separate PR | Tests are written and delivered alongside the behavior slice (TDD cycle) |
-| **False Dependencies** | Task B depends on Task A just because they touch the same directory | Only declare `Blocked By` when Task B cannot be compiled, run, or verified without Task A |
-| **Hollow / Stub Tasks** | Task 1: Create interface and placeholder methods for future tasks | Every task must leave the codebase in a fully working, compilable, and tested state |
-| **Artificial Over-Splitting** | Splitting a single cohesive 20-line CRUD into 4 separate tasks | Keep cohesive, narrow changes as a single verifiable task |
-
----
-
-## 4. Anti-Rot & Verification Rules
-
-1. **No Placeholders**: Never leave `TODO`, `TBD`, `FIXME`, or default scaffold placeholder text in any document. `cabbage verify` strictly fails on placeholder detection.
-2. **Checked Tasks for Merge**: All `- [ ]` checkboxes in `tasks.md` must be marked as completed (`- [x]`) before `cabbage gate <change> merge` can pass.
-3. **Immutable vs. Current-State**:
-   - Current-state docs are updated in-place to reflect reality.
-   - Historical records (`ADR`, `RFC`, `Postmortem`) must never be edited retroactively; write a new ADR/RFC that explicitly supersedes the prior record.
-4. **Mermaid Diagrams**: Architectural flow, state, DAG, and sequence diagrams must use Mermaid code blocks rather than static image assets.
+变更记录解释这次改动，当前文档解释系统现在的行为，二者不能靠文件复制实现语义整合。
+当前文档失真时按模块更新；历史决策通过后续记录明确替代，不静默改写。
+`sync` 按映射复制文档，不检查验证状态；发布前先通过合并门禁。

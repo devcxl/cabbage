@@ -1,6 +1,11 @@
 """Keep published commands and the checked-in CLI snapshot trustworthy."""
 from pathlib import Path
+import os
 import re
+import shlex
+import subprocess
+import sys
+from tempfile import TemporaryDirectory
 import unittest
 
 import yaml
@@ -34,10 +39,46 @@ class RepositoryContractsTest(unittest.TestCase):
         }
         paths = [ROOT / 'README.md', ROOT / 'SKILL.md']
         paths += list((ROOT / 'references').glob('*.md'))
+        paths += list((ROOT / 'docs').glob('*/README.md'))
         for path in paths:
             for stage in re.findall(r'(?m)^[ \t]*cabbage verify[ \t]+[^\s`]+[ \t]+([a-z][a-z-]*)', path.read_text()):
                 with self.subTest(path=path.relative_to(ROOT), stage=stage):
                     self.assertIn(stage, stages)
+
+    def test_readme_command_examples_execute(self):
+        commands = re.findall(r'(?m)^cabbage ([^\n]+)', (ROOT / 'README.md').read_text())
+        self.assertTrue(commands)
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            env = {**os.environ, 'PYTHONPATH': str(ROOT)}
+            def git(*args):
+                subprocess.run(['git', *args], cwd=root, check=True, capture_output=True)
+            git('init', '-b', 'main')
+            git('config', 'user.name', 'tester')
+            git('config', 'user.email', 'tester@example.com')
+            for command in commands:
+                args = shlex.split(command)
+                if args[0] == 'verify':
+                    # Stand in for the documented human editing and implementation steps.
+                    workspace = root / '.cabbage/changes' / args[1]
+                    spec = yaml.safe_load((workspace / 'change.yaml').read_text())
+                    workflow_path = root / '.cabbage/workflows' / f"{spec['type']}.yaml"
+                    workflow = yaml.safe_load(workflow_path.read_text())
+                    stage = next(s for s in workflow['stages'] if s['id'] == args[2])
+                    artifact = workspace / stage['artifact']
+                    text = re.sub(r'<!--\s*CABBAGE:.*?-->', 'Executed regression with passing result.', artifact.read_text(), flags=re.S)
+                    artifact.write_text(text.replace('- [ ]', '- [x]'))
+                    if args[2] == 'implementation':
+                        (root / 'app.py').write_text('print("fixed")\n')
+                if args[0] == 'ci':
+                    git('add', '.')
+                    git('commit', '-m', 'verified implementation')
+                result = subprocess.run([sys.executable, '-m', 'cabbage_cli', *args], cwd=root, env=env, text=True, capture_output=True)
+                self.assertEqual(0, result.returncode, command + '\n' + result.stdout + result.stderr)
+                if args[0] == 'init':
+                    git('add', '.')
+                    git('commit', '-m', 'baseline')
+                    git('update-ref', 'refs/remotes/origin/main', 'HEAD')
 
 
 if __name__ == '__main__':

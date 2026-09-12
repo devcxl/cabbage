@@ -1,102 +1,39 @@
-# Document, Code & Workflow Validation Standards
+# 验证与门禁
 
-This reference outlines the multi-tier validation architecture in Cabbage, including automated CLI validation, TDD behavioral testing protocols, and the Dual-Axis Review framework.
+## 自动检查的真实范围
 
----
+| 命令 | 检查或操作 |
+| --- | --- |
+| `validate` | `change` / `cabbage_stage` 元数据、工作流必需标题、文件存在、本地链接与锚点、Mermaid 围栏及图表类型 |
+| `verify` | 上述检查，以及前置阶段完成、占位符清除、任务清单无未勾选项；随后记录内容指纹 |
+| `gate implementation` | 工作流中排列在 `implementation` 之前的已启用阶段均完成 |
+| `gate merge` / `gate archive` | 所有已启用阶段完成，内容指纹仍匹配 |
+| `ci --base <ref>` | `<ref>...HEAD` 中的代码变更绑定、改动中的活动变更校验、合并门禁和适用的当前文档路径 |
 
-## 1. Automated CLI Validation Pipeline
+`validate` 允许尚未填写完的模板和未完成清单，不等同于 `verify`。
+Mermaid 检查不是完整语法解析；构建站点仍需独立执行 `cabbage docs build`。
+`verify` 失败返回 2；`validate`、`gate`、`ci` 报告错误返回 1。
 
-When `cabbage verify <change> <stage>` or `cabbage validate` runs, the CLI enforces:
+## 小变更
 
-### Structural & Frontmatter Integrity
-- Frontmatter contains valid `change` and `stage` identifiers.
-- All mandatory headings defined in the workflow template exist in the file.
-- File is valid UTF-8 encoded Markdown.
+新项目的普通功能、修复和重构只验证 `tasks.md` 对应的 `implementation` 阶段。
+没有高风险前置材料时实现门禁直接允许；合并门禁仍拒绝未验证或失效的记录。
 
-### Content Completeness & Quality
-- **Zero Placeholders**: No residual `TODO`, `TBD`, `FIXME`, or default scaffold prompts.
-- **Completed Tasks**: In task-oriented stages (`tasks.md`), all checklist items must be checked (`- [x]`). Unchecked items (`- [ ]`) strictly fail verification.
-- **Diagram Syntax**: All ```mermaid fences are properly closed and valid.
+有架构、外部 API、数据库、安全或高风险发布影响时，先声明标记并验证新增专项阶段。
+修改专项材料后，依赖它的已验证实现记录会失效，需要重新审阅与验证。
 
-### Link & Reference Integrity
-- Local file links resolve to real paths in the repository.
-- Anchor tags (`#heading-slug`) correspond to valid section titles.
+## 测试证据
 
-### Cryptographic Signatures
-- Upstream dependencies are verified (`done`).
-- Stage signature (SHA-256) matches current artifact and dependency content.
+- 以可观察行为验证目标，修复先复现失败再验证通过。
+- 在记录中填写真实命令、结果和未覆盖风险，不把计划当执行证据。
+- 小变更不要求单独测试计划、DAG 或重复 SOP；复杂任务可按需展开。
+- 人工评审仍需判断范围、正确性、测试质量和当前文档是否失真。
 
----
+## CI 与信任边界
 
-## 2. Test-Driven Development (TDD) Behavioral Protocol
+新轻量工作流通过 `record_covers: [product, testing]` 声明这两类内容在单份记录中完成，
+因此不要求额外产品和测试目录改动。其他影响的当前文档规则保持不变。
+旧工作流没有该声明，原有要求继续生效。
 
-During implementation, developers and agents should follow behavior-oriented TDD:
-
-```text
-Identify Public Test Seam & Target Behavior
-                   │
-                   ▼
-       Write Behavior Test (RED)
-                   │
-                   ▼
-         Minimal Implementation (GREEN)
-                   │
-                   ▼
-    Refactor (Behavior-Preserving)
-                   │
-                   ▼
-        Next Observable Behavior
-```
-
-### Core TDD Principles
-1. **Tests are Behavioral Specifications**: Test observable outcomes through public Test Seams agreed upon in `tech-spec.md` (Testing Decisions).
-2. **Implementation Decoupling**: Do not test private methods, internal call order, or invocation counts. Internal refactoring must not break behavioral tests.
-3. **No Mock-Driven Architecture**: Only mock external systems at real architectural boundaries (e.g. third-party APIs). Do not introduce fake interfaces solely for mocking.
-4. **Avoid TDD Anti-Patterns**:
-   - *Side-channel assertion*: Bypassing public interfaces to directly inspect database records or private fields.
-   - *Tautological testing*: Re-implementing the production algorithm inside the test fixture to calculate expected values.
-   - *Batch horizontal testing*: Writing all tests at once before implementing code.
-
----
-
-## 3. Dual-Axis Review Framework (Specification & Convention)
-
-Code and documentation reviews must evaluate changes along two independent, non-interchangeable axes:
-
-```mermaid
-flowchart LR
-    subgraph Review["Dual-Axis Review"]
-        Spec["1. Specification Axis\n(Did we build the right thing?)"]
-        Conv["2. Convention Axis\n(Did we build it right?)"]
-    end
-    Spec --> Decision{"Both Axes Pass?"}
-    Conv --> Decision
-    Decision -- Yes --> Approved["Approved for Merge"]
-    Decision -- No --> ChangesRequested["Changes Requested"]
-```
-
-### Axis 1: Specification Axis (Did we build the right thing?)
-- **Requirements Coverage**: Verifies that all user stories, acceptance criteria, and task items are fully satisfied.
-- **Scope Creep Prevention**: Confirms that no unrequested abstractions, features, or speculative capabilities were introduced.
-- **Edge Cases & Failure Modes**: Verifies boundary conditions, error handling, and timeout/resilience semantics.
-- **Evidence Verification**: Verifies that every Acceptance Criterion is backed by a passing behavioral test or verifiable command.
-
-### Axis 2: Convention Axis (Did we build it right?)
-- **Architectural Depth**: Ensures modules are deep with concise interfaces, avoiding shallow pass-through layers.
-- **KISS & YAGNI**: Adheres to minimal necessary complexity; eliminates speculative design.
-- **Test Quality**: Confirms tests exercise behavior via public seams without implementation coupling.
-- **Documentation Parity**: Confirms that API specs, DB designs, and current-state docs in `docs/` reflect code changes.
-
-### Review Verdict Rules
-- **Approved**: Both Specification and Convention axes have zero blocking findings.
-- **Changes Requested**: Any blocking finding on either axis results in rejection. A pass on one axis cannot mask a failure on the other.
-
----
-
-## 4. CI & Git Diff Binding (`cabbage ci`)
-
-In CI environments, `cabbage ci --base <ref>` enforces:
-
-1. **Change Workspace Binding**: If code files under source directories are modified in a PR, a valid matching Cabbage change workspace must exist and pass verification.
-2. **Clean VitePress Build**: `cabbage docs build` must compile without errors or dead links.
-3. **No Stale Stages**: All required workflow stages for active changes must be in `done` state.
+CI 只检查路径是否发生变化，不证明代码与文档语义一致。
+内容指纹不验证审批身份，也不是防篡改凭证；保护分支与策略文件审批仍需托管平台配置。
