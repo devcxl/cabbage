@@ -31,7 +31,7 @@ def cmd_adopt(a):
         if r["action"] in {"migrate","import","review"}:
             target=r["target"] or "-"
             print(f"  {r['action']:8} {r['path']}  ->  {target}")
-    print("next: resolve review rows, then follow references/adoption.md")
+    print("next: resolve review rows, then follow the cabbage-adopt skill")
     return 0
 
 def cmd_discard(a):

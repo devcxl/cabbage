@@ -1,0 +1,14 @@
+id: split-skills
+type: feature
+status: active
+impact:
+  product: true
+  architecture: true
+  api: false
+  database: false
+  security: false
+  testing: true
+  deployment: false
+  operations: false
+  data: false
+  performance: false

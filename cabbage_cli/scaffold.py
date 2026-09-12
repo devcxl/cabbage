@@ -311,7 +311,7 @@ def render_adoption_report(root: Path, rows: list[dict]) -> str:
         "4. Record completed moves in a change record (`cabbage new feature adopt-existing-docs`).",
         "5. Verify the current-state site (`cabbage docs build`), then enable CI gates.",
         "",
-        f"The standard current-state tree is `{docs_name}/`; see `references/directory-structure.md`.",
+        f"The standard current-state tree is `{docs_name}/`; see the cabbage-docs skill for the layout.",
         "",
     ]
     return "\n".join(lines)

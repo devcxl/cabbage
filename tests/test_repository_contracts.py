@@ -21,6 +21,15 @@ def package_files(root):
     }
 
 
+def skill_dirs():
+    return sorted(p for p in (ROOT / 'skills').iterdir() if (p / 'SKILL.md').is_file())
+
+
+def skill_docs():
+    for skill in skill_dirs():
+        yield from skill.rglob('*.md')
+
+
 class RepositoryContractsTest(unittest.TestCase):
     def test_vendored_package_matches_source(self):
         source = package_files(ROOT / 'cabbage_cli')
@@ -31,14 +40,37 @@ class RepositoryContractsTest(unittest.TestCase):
         )
         self.assertEqual([], differences, 'Run python scripts/sync-vendor.py')
 
+    def test_skill_frontmatter_and_links_resolve(self):
+        self.assertTrue(skill_dirs(), 'no skills found under skills/')
+        for skill in skill_dirs():
+            with self.subTest(skill=skill.name):
+                text = (skill / 'SKILL.md').read_text()
+                self.assertTrue(text.startswith('---\n'), 'missing YAML frontmatter')
+                frontmatter = text.split('---')[1]
+                self.assertIn(f'name: {skill.name}', frontmatter)
+                description = re.search(r'(?m)^description: (.+)$', frontmatter)
+                self.assertIsNotNone(description, 'missing description')
+                self.assertGreater(len(description.group(1)), 80, 'description too vague to trigger on')
+            for path in skill.rglob('*.md'):
+                prose = re.sub(r'```.*?```', '', path.read_text(), flags=re.S)
+                prose = re.sub(r'`[^`\n]*`', '', prose)
+                for target in re.findall(r'\]\(([^)#\s]+\.md)(?:#[^)\s]*)?\)', prose):
+                    with self.subTest(path=path.relative_to(ROOT), target=target):
+                        self.assertTrue((path.parent / target).resolve().is_file(),
+                                        f'broken relative link: {target}')
+
+    def test_no_legacy_skill_entrypoint_remains(self):
+        self.assertFalse((ROOT / 'SKILL.md').exists(), 'use skills/<name>/SKILL.md instead')
+        self.assertFalse((ROOT / 'references').exists(), 'reference docs live inside each skill')
+
     def test_documented_verify_stages_exist(self):
         stages = {
             stage['id']
-            for path in (ROOT / 'cabbage_cli/assets/workflows').glob('*.yaml')
+            for directory in ('cabbage_cli/assets/workflows', '.cabbage/workflows')
+            for path in (ROOT / directory).glob('*.yaml')
             for stage in yaml.safe_load(path.read_text())['stages']
         }
-        paths = [ROOT / 'README.md', ROOT / 'SKILL.md']
-        paths += list((ROOT / 'references').glob('*.md'))
+        paths = [ROOT / 'README.md', *skill_docs()]
         paths += list((ROOT / 'docs').glob('*/README.md'))
         for path in paths:
             for stage in re.findall(r'(?m)^[ \t]*cabbage verify[ \t]+[^\s`]+[ \t]+([a-z][a-z-]*)', path.read_text()):

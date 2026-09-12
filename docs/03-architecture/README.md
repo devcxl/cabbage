@@ -45,6 +45,18 @@ flowchart TD
 
 项目级配置位于 `.cabbage/config.yaml`；工作流位于 `.cabbage/workflows/`；完成全部阶段的变更移动到 `.cabbage/archive/<year>/`。
 
+## 说明书分发
+
+面向 agent 的操作说明是 `skills/` 下的五个场景 skill：`cabbage-change`（流程入口）、
+`cabbage-decision`、`cabbage-incident`、`cabbage-docs`、`cabbage-adopt`。
+每个 skill 自包含其最小闭环与所需 references，可单独安装。根目录不再提供 `SKILL.md` 与 `references/`。
+
+拆分依据是 skill 触发依赖 description 语义匹配：按任务场景拆分使单次任务只加载一个 skill，
+而按流程阶段拆分会导致同一任务重复加载状态机知识。阶段真相保持在项目内
+（`.cabbage/workflows/*.yaml` 与 `cabbage next`），skill 不复制工作流定义。
+
+契约测试会校验每个 skill 的结构与相对链接，并阻止旧单文件入口回归。
+
 ## 新项目轻量工作流
 
 内置 `feature / bugfix / refactor` 默认用 `change-record.md` 模板生成单份 `tasks.md`。

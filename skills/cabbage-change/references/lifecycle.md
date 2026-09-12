@@ -58,9 +58,9 @@ To prevent documentation from rotting or going out of sync with code and design:
 
 1. **Content Signature**: When `cabbage verify <change> <stage>` runs, Cabbage computes the SHA-256 hash of the artifact content, the workflow stage schema, and all upstream dependency signatures.
 2. **Recorded in `state.json`**: The signature is saved into `.cabbage/changes/<change-id>/state.json`.
-3. **Cascading Invalidation**: If an upstream stage (e.g. `prd` or `impact`) is edited:
+3. **Cascading Invalidation**: If an upstream stage artifact is edited:
    - The upstream stage's hash changes.
-   - All dependent downstream stages (e.g. `tech-spec`, `tasks`) automatically evaluate to `stale`.
+   - All dependent downstream stages automatically evaluate to `stale`.
    - Gate checks (`gate implementation`, `gate merge`) will block until the stale stages are re-verified.
 
 ---
@@ -88,9 +88,11 @@ Specifications produced during a change are synchronized into persistent, long-l
 | `cabbage gate <change> merge` | All enabled stages are `done`, no `stale` stages | Request merge |
 | `cabbage gate <change> archive` | Same stage checks as `merge`; Git merge status is not inspected | Archive after independently confirming merge |
 
-Stage IDs are not artifact filenames: use `requirement`, `design`, `tests`, and
-`implementation`, not `prd`, `tech-spec`, `test-plan`, or `tasks`. Consult `next`
-for the current project's actual stages.
+Stage IDs are not artifact filenames. New lightweight workflows use `adr`, `api`,
+`database`, `security`, `release` and `implementation`; older or specialist
+workflows may use `requirement`, `impact`, `design` and `tests`. Always consult
+`cabbage next <change-id>` for the current project's actual stages instead of
+guessing or reusing another project's names.
 
 Standalone `sync` copies mapped artifacts without a gate check. Run `gate merge`
 first when publishing final documents. It does not combine successive change

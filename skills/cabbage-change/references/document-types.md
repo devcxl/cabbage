@@ -1,9 +1,9 @@
-# 文档类型
+# 文档类型与记录格式
 
 ## 默认：一份变更记录
 
 新项目的 `feature / bugfix / refactor` 使用 `change-record.md` 模板生成 `tasks.md`，
-阶段 ID 为 `implementation`。必须包含：
+阶段 ID 为 `implementation`。必需标题：
 
 | 标题 | 内容 |
 | --- | --- |
