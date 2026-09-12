@@ -13,6 +13,7 @@ cabbage <command> [arguments] [options]
 - `0` (`SUCCESS`): Command completed successfully, validation passed, or gate allowed.
 - `1`: `validate`, `gate`, or `ci` reported errors.
 - `2`: Argument parsing or a handled `CabbageError`, including a failed `verify`.
+  `next` also returns `2` when work remains but no stage is currently actionable.
 - `130`: Interrupted execution. `docs` forwards the pnpm process exit code; unexpected exceptions are not normalized.
 
 ---

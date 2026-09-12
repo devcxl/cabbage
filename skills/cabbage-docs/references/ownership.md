@@ -25,7 +25,9 @@ last-reviewed: 2026-03-01
 
 ## 2. CODEOWNERS Integration
 
-Repositories should leverage `.github/CODEOWNERS` to ensure document changes are reviewed by respective domain leads:
+Repositories should leverage `.github/CODEOWNERS` to ensure document changes are reviewed by respective domain leads.
+Document-review paths belong here; governance paths for Cabbage configuration, workflows, tooling and CI
+are listed in the `cabbage-adopt` skill (`references/enforcement.md`) so there is one authoritative copy.
 
 ```text
 # Architecture & ADRs require Principal / Architect review
@@ -33,9 +35,4 @@ Repositories should leverage `.github/CODEOWNERS` to ensure document changes are
 
 # Security reviews require SecOps approval
 /docs/09-security/ @security-team
-
-# Cabbage workflow and CI configuration require human tech lead approval
-/.cabbage/config.yaml @tech-lead
-/.cabbage/workflows/ @tech-lead
-/.github/workflows/cabbage.yml @tech-lead
 ```

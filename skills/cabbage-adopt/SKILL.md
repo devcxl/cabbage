@@ -62,14 +62,8 @@ cabbage docs build
 
 1. **分支保护**：禁止直接推送到默认分支；把 Cabbage 的 CI job 设为必需状态检查；
    对修改核心配置的 PR 要求人工审批。
-2. **CODEOWNERS**：为治理路径指定负责人。
-
-   ```text
-   /.cabbage/config.yaml     @tech-lead
-   /.cabbage/workflows/**    @tech-lead
-   /.cabbage/tooling/**      @tech-lead
-   /.github/workflows/cabbage.yml @tech-lead
-   ```
+2. **CODEOWNERS**：为治理路径指定负责人。当前权威清单见
+   `cabbage-adopt` skill 的 `references/enforcement.md`，勿在本文件另行维护一份。
 
 3. **状态文件保护**：`.cabbage/changes/*/state.json` 由 CLI 生成，禁止手工编辑。
 

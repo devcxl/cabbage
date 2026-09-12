@@ -12,7 +12,7 @@
 
 `validate` 允许尚未填写完的模板和未完成清单，不等同于 `verify`。
 Mermaid 检查不是完整语法解析；构建站点仍需独立执行 `cabbage docs build`。
-`verify` 失败返回 2；`validate`、`gate`、`ci` 报告错误返回 1。
+退出码见 [命令与退出码](cli.md)。
 
 ## 小变更
 

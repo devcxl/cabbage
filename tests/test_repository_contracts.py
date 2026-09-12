@@ -77,6 +77,32 @@ class RepositoryContractsTest(unittest.TestCase):
         self.assertEqual(set(), referenced - names,
                          'router points at skills that do not exist')
 
+    def test_exit_codes_are_documented_in_one_place(self):
+        # Duplicated exit-code lines drift apart; cli.md is the single source.
+        owners = []
+        for path in skill_docs():
+            if re.search(r'(?m)^-\s*`(1|2|130)`\s*:', path.read_text()):
+                owners.append(path.relative_to(ROOT).as_posix())
+        self.assertEqual(['skills/cabbage-change/references/cli.md'], owners,
+                         'exit-code reference belongs in cli.md only')
+
+    def test_governance_codeowners_block_has_one_copy(self):
+        lists = [p for p in skill_docs()
+                 if '/.cabbage/config.yaml' in p.read_text()]
+        self.assertEqual(['skills/cabbage-adopt/references/enforcement.md'],
+                         [p.relative_to(ROOT).as_posix() for p in lists],
+                         'governance CODEOWNERS paths must live in one file')
+
+    def test_release_plan_guidance_is_linked_from_change_skill(self):
+        guide = ROOT / 'skills/cabbage-change/references/release-plan.md'
+        self.assertTrue(guide.is_file(), 'missing release-plan writing guidance')
+        skill = (ROOT / 'skills/cabbage-change/SKILL.md').read_text()
+        self.assertIn('references/release-plan.md', skill,
+                      'the deployment flag must point at the release-plan guidance')
+        for heading in ('Preconditions', 'Deployment', 'Rollback', 'Verification'):
+            with self.subTest(heading=heading):
+                self.assertIn(heading, guide.read_text())
+
     def test_no_legacy_skill_entrypoint_remains(self):
         self.assertFalse((ROOT / 'SKILL.md').exists(), 'use skills/<name>/SKILL.md instead')
         self.assertFalse((ROOT / 'references').exists(), 'reference docs live inside each skill')

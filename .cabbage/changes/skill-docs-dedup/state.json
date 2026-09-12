@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "completed": {
+    "requirement": {
+      "signature": "29c8074dab659cb406fa92688d89e8bd1f4198abff46547bc3e18c71d4ae8988",
+      "verified_at": "2026-09-12T11:12:51.429888+00:00",
+      "completed_at": "2026-09-12T11:12:51.429908+00:00"
+    },
+    "impact": {
+      "signature": "ab9032a23190126fb73b8e9af461a603bb65f3abaec3f6b21a6c746139ecc84b",
+      "verified_at": "2026-09-12T11:12:51.541340+00:00",
+      "completed_at": "2026-09-12T11:12:51.541352+00:00"
+    },
+    "design": {
+      "signature": "16cc1730a72bcbb6282f0d8ed8f2a43235ac6acb72a98695af299783c2bac93c",
+      "verified_at": "2026-09-12T11:12:51.659024+00:00",
+      "completed_at": "2026-09-12T11:12:51.659035+00:00"
+    },
+    "tests": {
+      "signature": "46badc159e9d69a45b2ed6128d22147e181f558318e8c8ee13e809bf21afad78",
+      "verified_at": "2026-09-12T11:12:51.791644+00:00",
+      "completed_at": "2026-09-12T11:12:51.791655+00:00"
+    },
+    "implementation": {
+      "signature": "69737fbe753c9f6a23b856923307fa5bbd0b22a7a44466f1a53eb5977a49163d",
+      "verified_at": "2026-09-12T11:12:51.928424+00:00",
+      "completed_at": "2026-09-12T11:12:51.928435+00:00"
+    }
+  }
+}

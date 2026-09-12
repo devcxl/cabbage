@@ -1,0 +1,14 @@
+id: skill-docs-dedup
+type: feature
+status: active
+impact:
+  product: true
+  architecture: false
+  api: false
+  database: false
+  security: false
+  testing: true
+  deployment: false
+  operations: false
+  data: false
+  performance: false

@@ -57,6 +57,9 @@ cabbage next update-api
 | `security=true` | `security` / `security-review.md` | 权限、认证、隐私、密钥或信任边界变化 |
 | `deployment=true` | `release` / `release-plan.md` | 需要专项部署顺序、回滚或上线验证的发布 |
 
+发布计划的写法（顺序、成功信号、可测回滚触发条件、数据处置）见
+[发布与回滚方案](references/release-plan.md)。
+
 专项阶段位于 `implementation` 之前，必须逐一验证后才通过实现门禁。
 专项文档写待执行的步骤与验证方法，真实执行结果写入 `tasks.md`，不要在实现前伪造测试证据。
 
@@ -80,22 +83,10 @@ cabbage next update-api
 不要假设任意影响字段都能凭空新增一个工作流未定义的阶段。
 纯文档更新可直接修改归属文档，写作用 `cabbage-docs` skill。
 
-## 命令与退出码
+## 常用命令
 
-```bash
-cabbage new <type> <change-id>          # 创建变更工作区
-cabbage impact <change-id> [--set k=v]  # 查看或更新影响矩阵
-cabbage verify <change-id> <stage>      # 验证单个阶段并记录内容指纹
-cabbage validate <change-id> | --all    # 校验结构、链接、占位符
-cabbage gate <change-id> implementation|merge|archive
-cabbage sync <change-id>                # 按映射复制专项文档到 docs/
-cabbage archive <change-id>             # 先检查门禁，再同步并归档
-cabbage ci --base origin/main           # 在 CI 中检查差异、门禁与文档规则
-cabbage discard <change-id>             # 放弃活动变更
-```
-
-`verify` 失败返回 2；`validate`、`gate`、`ci` 报告错误返回 1。
-`next` 在所有阶段完成或跳过时返回 0，仍有待办但无可执行阶段时返回 2。
+用 `cabbage next <change-id>` 查实际阶段，不要猜阶段 ID。完整命令、参数与退出码见
+[命令与退出码](references/cli.md)。
 
 ## 任务分解与 DAG（按需）
 
