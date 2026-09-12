@@ -11,8 +11,9 @@ cabbage <command> [arguments] [options]
 ### Exit Codes
 
 - `0` (`SUCCESS`): Command completed successfully, validation passed, or gate allowed.
-- `1` (`VALIDATION_ERROR` / `GATE_BLOCKED`): Artifact validation failed, gate check blocked, or CI check failed.
-- `2` (`USAGE_ERROR` / `SYSTEM_ERROR`): Invalid arguments, missing configuration, corrupted workflow, or unexpected error.
+- `1`: `validate`, `gate`, or `ci` reported errors.
+- `2`: Argument parsing or a handled `CabbageError`, including a failed `verify`.
+- `130`: Interrupted execution. `docs` forwards the pnpm process exit code; unexpected exceptions are not normalized.
 
 ---
 
@@ -60,7 +61,7 @@ Create a new active change workspace under `.cabbage/changes/<change-id>/`.
 - **Arguments**:
   - `<type>`: `feature` | `architecture` | `bugfix` | `hotfix` | `refactor` | `migration` | `integration` | `incident`
   - `<change-id>`: Unique identifier in kebab-case (e.g., `user-oauth-login`).
-- **Behavior**: Scaffolds workflow artifacts, initializes `state.json`, and outputs initial stage status.
+- **Behavior**: Creates `change.yaml` and enabled workflow artifacts. `state.json` is created on first successful verification. Use `status` or `next` to inspect stages.
 
 ```bash
 cabbage new feature user-oauth-login
@@ -89,7 +90,7 @@ cabbage next user-oauth-login
 #### `cabbage impact <change-id> [--set field=true|false] [--json]`
 Inspect or mutate the impact analysis matrix of a change.
 - **Available Fields**: `product`, `architecture`, `api`, `database`, `security`, `testing`, `deployment`, `operations`, `data`, `performance`.
-- **Behavior**: Mutating impact updates `change.yaml`, generates conditional artifact templates, and resets downstream stages to `stale`.
+- **Behavior**: Updates `change.yaml`, generates enabled conditional artifacts, and updates an existing impact table. Affected verified stages derive `stale` status from changed signatures; unrelated stages need not become stale.
 
 ```bash
 cabbage impact user-oauth-login --set api=true --set database=true
@@ -130,8 +131,10 @@ Verify a single stage artifact, check content completeness, ensure no placeholde
   - Mermaid diagram syntax fences are closed.
 
 ```bash
-cabbage verify user-oauth-login prd
-cabbage verify user-oauth-login tasks
+# Use the stage IDs returned by `cabbage next`, not artifact filenames.
+cabbage verify user-oauth-login requirement
+# After required dependencies and implementation work are complete:
+cabbage verify user-oauth-login implementation
 ```
 
 #### `cabbage validate [<change-id> | --all] [--json]`
@@ -145,9 +148,9 @@ cabbage validate --all
 #### `cabbage gate <change-id> <target> [--json]`
 Evaluate readiness for specific milestones in the software development lifecycle.
 - **Targets**:
-  - `implementation`: Enforces that PRD, tech-spec, architecture, and task artifacts are verified before code changes begin.
+  - `implementation`: Requires enabled stages listed before `implementation` in the project workflow to be verified. It does not verify the implementation checklist in advance.
   - `merge`: Enforces that all active workflow stages (testing, release, documentation) are verified before merging PR.
-  - `archive`: Enforces that the entire change lifecycle is completed before archiving.
+  - `archive`: Like `merge`, requires every enabled stage to be verified. Git merge status is not checked.
 
 ```bash
 cabbage gate user-oauth-login implementation
@@ -160,7 +163,7 @@ cabbage gate user-oauth-login archive
 ### 4. Sync, Archive & CI
 
 #### `cabbage sync <change-id> [--json]`
-Extract verified specifications (e.g. API designs, ADRs, database schemas) and synchronize them into the persistent `docs/` tree.
+Copy enabled, existing artifacts with a configured mapping into `docs/`. This command does not check verification status or semantically merge specifications; run `gate merge` first when publishing final documents. Default filenames use the change ID, not an auto-assigned ADR number.
 
 ```bash
 cabbage sync user-oauth-login
@@ -174,7 +177,7 @@ cabbage archive user-oauth-login
 ```
 
 #### `cabbage ci --base <git-ref>`
-Continuous Integration runner. Validates Git diff, verifies that code modifications are bound to valid Cabbage changes, checks all active changes, and ensures docs build cleanly.
+Inspect `<base>...HEAD`, require an active changed change record for code changes, and validate changed active records, their merge gates, and configured current-document paths. It neither validates every unchanged active record nor runs a documentation build; run `validate --all` and `docs build` separately.
 
 ```bash
 cabbage ci --base origin/main

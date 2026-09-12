@@ -29,6 +29,12 @@ flowchart TD
 
 `cabbage init` 将工作流复制到 `.cabbage/workflows/`，并默认把 `cabbage_cli` vendoring 到 `.cabbage/tooling/`。因此 CI 可以直接使用仓库内工具版本，而不依赖预先发布的 Python 包。
 
+本仓库的唯一 CLI 源码是 `cabbage_cli/`。修改后执行 `python scripts/sync-vendor.py`
+生成 `.cabbage/tooling/cabbage_cli/`，不要手改副本；该命令不更新项目工作流、配置或历史记录。
+`python -m unittest discover -s tests -p test_repository_contracts.py` 检查副本内容（含隐藏站点配置）
+与指南阶段名称，完整测试套件及 CI 同样执行这些检查。已有项目不要用 `init --force` 升级 CLI，
+因为它会覆盖项目配置及工作流。
+
 ## 数据与目录模型
 
 每个活跃变更位于 `.cabbage/changes/<change-id>/`：

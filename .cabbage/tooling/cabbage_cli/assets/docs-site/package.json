@@ -1,16 +1,16 @@
 {
+  "name": "docs",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vuepress dev .",
-    "build": "vuepress build ."
+    "dev": "vitepress dev .",
+    "build": "vitepress build .",
+    "preview": "vitepress preview ."
   },
   "devDependencies": {
-    "vue": "^3.5.0",
-    "vuepress": "next",
-    "@vuepress/bundler-vite": "next",
-    "@vuepress/theme-default": "next",
-    "@vuepress/plugin-markdown-chart": "next",
-    "mermaid": "^11.0.0",
-    "sass-embedded": "^1.103.1"
+    "mermaid": "^11.4.1",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17",
+    "vue": "^3.5.13"
   }
 }

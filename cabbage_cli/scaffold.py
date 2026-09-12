@@ -113,10 +113,17 @@ def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
             if existing and not existing.endswith("\n"): f.write("\n")
             f.write("\n# cabbage / VitePress\n"+"\n".join(add)+"\n")
     if vendor_cli:
-        pkg=Path(__file__).resolve().parent
-        target=d/"tooling/cabbage_cli"
-        if target.exists(): shutil.rmtree(target)
-        shutil.copytree(pkg,target,ignore=shutil.ignore_patterns("__pycache__","*.pyc"))
+        sync_vendored_cli(root)
+
+def sync_vendored_cli(root: Path):
+    """Regenerate the repository-local CLI from the installed source package."""
+    pkg = Path(__file__).resolve().parent
+    target = root / ".cabbage/tooling/cabbage_cli"
+    if pkg == target.resolve():
+        raise CabbageError("cannot refresh vendored CLI from itself; use the source package")
+    if target.exists():
+        shutil.rmtree(target)
+    shutil.copytree(pkg, target, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
 def render_template(stage: dict, change_id: str, change_type: str) -> str:
     template=stage.get("template","generic.md")

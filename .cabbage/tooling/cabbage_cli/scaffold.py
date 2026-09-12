@@ -7,7 +7,7 @@ from .core import CabbageError, dump_yaml, load_config, load_yaml, change_dir, n
 
 IMPACT_FIELDS=["product","architecture","api","database","security","testing","deployment","operations","data","performance"]
 
-ADOPTION_IGNORED_DIRS={".git",".cabbage",".github",".idea",".vscode",".venv","venv","node_modules","__pycache__","dist","build","target","coverage","site",".cache",".temp",".vuepress","vendor"}
+ADOPTION_IGNORED_DIRS={".git",".cabbage",".github",".idea",".vscode",".venv","venv","node_modules","__pycache__","dist","build","target","coverage","site",".cache",".temp",".vitepress",".vuepress","vendor"}
 
 ADOPTION_CATEGORY_RULES=[
     ("adr",{"adr"}),
@@ -45,6 +45,13 @@ ADOPTION_CONFORMING_AREAS={
     "06":"development","07":"standards","08":"testing","09":"security","10":"infrastructure",
     "11":"ci-cd","12":"release","13":"operations","14":"performance","15":"incident","16":"dependencies","17":"compliance",
 }
+
+ALL_CONFORMING_DIRS = [
+    "00-overview", "01-product", "02-design", "03-architecture/adr", "03-architecture/rfc",
+    "03-architecture/system-design", "04-data", "05-api", "06-development", "07-standards",
+    "08-testing", "09-security", "10-infrastructure", "11-ci-cd", "12-release",
+    "13-operations", "14-performance", "15-incidents", "16-dependencies", "17-compliance"
+]
 
 def asset(path: str):
     return resources.files("cabbage_cli").joinpath("assets", path)
@@ -90,7 +97,7 @@ def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
     (d/"changes").mkdir(exist_ok=True); (d/"archive").mkdir(exist_ok=True)
     copy_asset_tree("docs-site",root/"docs",overwrite=False)
     # current-state doc skeleton
-    for name in ["00-overview","01-product","03-architecture/adr","03-architecture/rfc","04-data","05-api","08-testing","09-security","12-release","13-operations","15-incidents"]:
+    for name in ALL_CONFORMING_DIRS:
         (root/"docs"/name).mkdir(parents=True,exist_ok=True)
     # CI template
     gh=root/".github/workflows"; gh.mkdir(parents=True,exist_ok=True)
@@ -98,18 +105,25 @@ def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
     cip=gh/"cabbage.yml"
     if not cip.exists(): cip.write_text(ci,encoding="utf-8")
     gi=root/".gitignore"
-    ignores=["docs/node_modules/","docs/.vuepress/.cache/","docs/.vuepress/.temp/","docs/.vuepress/dist/"]
+    ignores=["docs/node_modules/","docs/.vitepress/cache/","docs/.vitepress/dist/"]
     existing=gi.read_text(encoding="utf-8") if gi.exists() else ""
     add=[x for x in ignores if x not in existing.splitlines()]
     if add:
         with gi.open("a",encoding="utf-8") as f:
             if existing and not existing.endswith("\n"): f.write("\n")
-            f.write("\n# cabbage / VuePress\n"+"\n".join(add)+"\n")
+            f.write("\n# cabbage / VitePress\n"+"\n".join(add)+"\n")
     if vendor_cli:
-        pkg=Path(__file__).resolve().parent
-        target=d/"tooling/cabbage_cli"
-        if target.exists(): shutil.rmtree(target)
-        shutil.copytree(pkg,target,ignore=shutil.ignore_patterns("__pycache__","*.pyc"))
+        sync_vendored_cli(root)
+
+def sync_vendored_cli(root: Path):
+    """Regenerate the repository-local CLI from the installed source package."""
+    pkg = Path(__file__).resolve().parent
+    target = root / ".cabbage/tooling/cabbage_cli"
+    if pkg == target.resolve():
+        raise CabbageError("cannot refresh vendored CLI from itself; use the source package")
+    if target.exists():
+        shutil.rmtree(target)
+    shutil.copytree(pkg, target, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
 def render_template(stage: dict, change_id: str, change_type: str) -> str:
     template=stage.get("template","generic.md")
@@ -207,7 +221,13 @@ def conforming_area(rel: Path, docs_name: str|None=None) -> str|None:
         return ADOPTION_CONFORMING_AREAS[m.group(1)]
     return None
 
-def adopt_project(root: Path) -> dict:
+def discard_change(root: Path, change_id: str) -> None:
+    d = change_dir(root, change_id)
+    if not d.exists():
+        raise CabbageError(f"change `{change_id}` does not exist")
+    shutil.rmtree(d)
+
+def adopt_project(root: Path, apply: bool = False) -> dict:
     project_root(root)
     load_config(root)
     rows=[]; counts={"migrate":0,"import":0,"keep":0,"review":0}
@@ -220,11 +240,38 @@ def adopt_project(root: Path) -> dict:
             action,category,target=classify_adoption_doc(rel)
         counts[action]+=1
         rows.append({"path":str(rel).replace("\\","/"),"action":action,"category":category,"target":target})
+
+    applied = []
+    if apply:
+        for r in rows:
+            if r["action"] in {"migrate", "import"} and r["target"]:
+                src_path = root / r["path"]
+                dst_dir = root / r["target"]
+                dst_dir.mkdir(parents=True, exist_ok=True)
+                dst_path = dst_dir / src_path.name
+                if not dst_path.exists():
+                    shutil.move(str(src_path), str(dst_path))
+                    if r["action"] == "migrate":
+                        try:
+                            text = dst_path.read_text(encoding="utf-8")
+                            if not text.startswith("---\n"):
+                                fm = f"---\ncategory: {r['category']}\nadopted_at: {now_iso()}\n---\n\n"
+                                dst_path.write_text(fm + text, encoding="utf-8")
+                        except Exception:
+                            pass
+                    applied.append({"from": r["path"], "to": str(dst_path.relative_to(root)).replace("\\", "/")})
+
+        if applied:
+            # Re-scan after applying
+            res = adopt_project(root, apply=False)
+            res["applied"] = applied
+            return res
+
     report=render_adoption_report(root,rows)
     out=root/".cabbage/adoption-report.md"
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(report,encoding="utf-8")
-    return {"report":str(out.relative_to(root)),"counts":counts,"documents":rows}
+    return {"report":str(out.relative_to(root)),"counts":counts,"documents":rows, "applied": applied}
 
 def render_adoption_report(root: Path, rows: list[dict]) -> str:
     docs_name=load_config(root).get("docs",{}).get("dir","docs")

@@ -1,43 +1,34 @@
 # 测试说明
 
-当前自动化测试基线为 14 项 `unittest`，覆盖核心门禁、Cabbage 重命名契约、文档构建依赖契约和全部模板结构。测试不依赖外部服务，主要在临时目录中验证真实文件系统行为。
+测试使用 Python `unittest`，主要在临时目录验证真实文件系统和 CLI 行为，不依赖外部服务。
+测试数量以实际运行输出为准，不手工维护容易失效的计数表。
 
 ## 执行方式
 
 ```bash
-python -m unittest discover -s tests -v
-```
-
-Python 语法检查可独立执行：
-
-```bash
-python -m compileall -q cabbage_cli tests
+python -m unittest discover tests
+python -m cabbage_cli validate --all
+pnpm --dir docs run build
+git diff --check
 ```
 
 ## 覆盖范围
 
-| 测试文件 | 数量 | 主要覆盖 |
-| --- | ---: | --- |
-| `tests/test_cabbage.py` | 4 | 未编辑模板拒绝完成、旧占位兼容、完成态校验、门禁与 `stale` 传播 |
-| `tests/test_cabbage_rename.py` | 6 | 包和模块入口、初始化路径、项目元数据、文档构建依赖、vendored CLI 可执行性 |
-| `tests/test_templates.py` | 4 | 核心及专项模板结构、workflow 标题契约、影响矩阵同步行 |
+- `test_cabbage.py`：模板校验、依赖门禁、失效传播、同步与归档。
+- `test_cabbage_rename.py`：包入口、初始化、站点依赖、vendored CLI。
+- `test_engine_enhancements.py`：依赖环、Markdown、清单、迁移、文档映射和 Git CI。
+- `test_adopt.py`：文档盘点和分类。
+- `test_templates.py`：模板标题契约。
+- `test_tasks_dag.py`：可选 DAG 解析与派发数据。
+- `test_repository_contracts.py`：指南使用真实阶段 ID；副本所有文件与主实现一致。
 
-## 关键行为断言
+修改 `cabbage_cli/` 后执行 `python scripts/sync-vendor.py`，不要手动修改
+`.cabbage/tooling/cabbage_cli/`。完整测试套件与 CI 会检查副本漂移。
 
-- 草稿可被普通校验读取，但含占位提示的文档不能完成阶段。
-- 完成依赖链后可以通过合并门禁；修改上游需求会使相关下游阶段变为 `stale`。
-- `cabbage init` 生成 `.cabbage/config.yaml` 和 `.github/workflows/cabbage.yml`。
-- `pyproject.toml` 只暴露 `cabbage` 命令与 `cabbage_cli` 包。
-- 内置模板包含评审所需章节，并满足各 workflow 的必需标题契约。
+## 验证记录与边界
 
-## 当前测试边界
+指南和副本修复前，新增检查复现了无效阶段名称与七个文件差异；修复后完整
+Python 测试与 VitePress 构建通过。构建仍提示部分 chunk 大于 500 kB，不影响成功。
 
-以下行为目前主要依赖实现审查或工作流集成验证，尚无对应的独立自动化测试：
-
-- `ci --base` 对真实 Git diff、归档删除和当前状态目录规则的全部分支；
-- 本地 Markdown 断链、路径越界和 Mermaid 围栏异常的逐项回归；
-- `archive` 的文件移动与冲突处理；
-- `cabbage docs install/dev/build` 与完整 VuePress 构建链；
-- GitHub 分支保护是否把 `cabbage` job 配置为必需检查。
-
-新增行为时应优先写失败测试，再做最小实现并运行全量测试。涉及模板或 workflow 的变更还应验证所有模板标题契约，避免新建变更后才暴露结构不匹配。
+自动检查不证明文档语义与代码一致，也不验证 GitHub 的分支保护设置。
+CLI 的单元测试不能替代真实文档站点构建及远程 CI/部署检查。

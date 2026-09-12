@@ -13,7 +13,7 @@ A change progresses through two top-level states:
 ```
 
 - **Active**: Workspace located at `.cabbage/changes/<change-id>/`. Work is actively planned, designed, implemented, and verified.
-- **Archived**: Workspace moved to `.cabbage/archive/<YYYY>/<change-id>/`. The change is permanently closed, immutable, and synchronized into `docs/`.
+- **Archived**: Workspace moved to `.cabbage/archive/<YYYY>/<change-id>/`. The CLI treats the change as closed and synchronizes mapped artifacts into `docs/`. Files remain ordinary Git-managed files; immutability depends on repository policy.
 
 ---
 
@@ -64,7 +64,7 @@ Specifications produced during a change are synchronized into persistent, long-l
 
 - **Sync Targets**:
   - `api-design.md` -> `docs/05-api/`
-  - `database-design.md` -> `docs/04-data/database-design/`
+  - `database-design.md` -> `docs/04-data/`
   - `adr.md` -> `docs/03-architecture/adr/`
   - `rfc.md` -> `docs/03-architecture/rfc/`
 - **When to Sync**:
@@ -77,6 +77,14 @@ Specifications produced during a change are synchronized into persistent, long-l
 
 | Gate Target | Enforced Conditions | Next Permitted Action |
 |---|---|---|
-| `cabbage gate <change> implementation` | `prd`, `impact`, `tech-spec`, `adr`, `database-design`, `tasks` (all pre-implementation stages) are `done` | Begin writing source code and tests |
-| `cabbage gate <change> merge` | All active stages (`test-plan`, `release-plan`, `tasks` with all items `[x]`) are `done`, no `stale` stages | Open / Merge Pull Request |
-| `cabbage gate <change> archive` | Change fully merged to target branch, all workflow stages `done` | Run `cabbage archive <change>` |
+| `cabbage gate <change> implementation` | All enabled stages before `implementation` in the workflow are `done` | Begin implementation |
+| `cabbage gate <change> merge` | All enabled stages are `done`, no `stale` stages | Request merge |
+| `cabbage gate <change> archive` | Same stage checks as `merge`; Git merge status is not inspected | Archive after independently confirming merge |
+
+Stage IDs are not artifact filenames: use `requirement`, `design`, `tests`, and
+`implementation`, not `prd`, `tech-spec`, `test-plan`, or `tasks`. Consult `next`
+for the current project's actual stages.
+
+Standalone `sync` copies mapped artifacts without a gate check. Run `gate merge`
+first when publishing final documents. It does not combine successive change
+records into a module's current specification.
