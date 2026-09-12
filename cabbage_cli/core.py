@@ -468,6 +468,7 @@ def parse_tasks_markdown(text: str) -> dict:
     # 2. Parse Task sections (## Task <slug>)
     task_sections = re.findall(r"(?m)^##\s+(Task\b[^\n]*)\n([\s\S]*?)(?=(?:^##\s+|\Z))", text)
     tasks = []
+    structured = True
 
     if task_sections:
         for header, body in task_sections:
@@ -522,7 +523,9 @@ def parse_tasks_markdown(text: str) -> dict:
                 "is_completed": is_completed,
             })
     else:
-        # Fallback: scan checkboxes in # Tasks section
+        # Fallback: scan checkboxes in # Tasks section. These tasks declare no
+        # dependencies or verification, so they are not dispatchable.
+        structured = False
         tasks_block_match = re.search(r"(?m)^#\s+Tasks\b([\s\S]*?)(?=(?:^#\s+|\Z))", text)
         block = tasks_block_match.group(1) if tasks_block_match else text
         cb_matches = re.findall(r"^\s*[-*]\s+\[([ xX\-\/])\]\s*([^\n]+)", block, flags=re.M)
@@ -565,26 +568,29 @@ def parse_tasks_markdown(text: str) -> dict:
         grp = t.get("parallel_group", "Default")
         parallel_groups.setdefault(grp, []).append(t)
 
-    # 5. Build subagent dispatch plan for ready tasks
+    # 5. Build subagent dispatch plan for ready tasks.
+    # A plain checklist declares no dependencies, so there is nothing to
+    # dispatch; only structured task sections produce a plan.
     dispatch_plan = []
-    for grp, grp_tasks in parallel_groups.items():
-        ready_tasks = [t for t in grp_tasks if t["is_ready"]]
-        if ready_tasks:
-            dispatch_plan.append({
-                "parallel_group": grp,
-                "tasks": [
-                    {
-                        "agent": "coder",
-                        "task_id": t["task_id"],
-                        "title": t["title"],
-                        "builds": t["builds"],
-                        "verification": t["verification"],
-                        "sop": t.get("sop", []),
-                        "prompt": f"Execute {t['task_id']} ({t['title']}): {t['builds']} following Task SOP. Verification: {t['verification']}."
-                    }
-                    for t in ready_tasks
-                ]
-            })
+    if structured:
+        for grp, grp_tasks in parallel_groups.items():
+            ready_tasks = [t for t in grp_tasks if t["is_ready"]]
+            if ready_tasks:
+                dispatch_plan.append({
+                    "parallel_group": grp,
+                    "tasks": [
+                        {
+                            "agent": "coder",
+                            "task_id": t["task_id"],
+                            "title": t["title"],
+                            "builds": t["builds"],
+                            "verification": t["verification"],
+                            "sop": t.get("sop", []),
+                            "prompt": f"Execute {t['task_id']} ({t['title']}): {t['builds']} following Task SOP. Verification: {t['verification']}."
+                        }
+                        for t in ready_tasks
+                    ]
+                })
 
     total_tasks = len(tasks)
     completed_count = sum(1 for t in tasks if t["is_completed"])
@@ -593,6 +599,7 @@ def parse_tasks_markdown(text: str) -> dict:
 
     return {
         "mermaid": mermaid_code,
+        "structured": structured,
         "total_tasks": total_tasks,
         "completed_tasks": completed_count,
         "ready_tasks": ready_count,

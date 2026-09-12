@@ -97,11 +97,15 @@ cabbage impact user-oauth-login --set api=true --set database=true
 ```
 
 #### `cabbage tasks <change-id> [--export-dag] [--json]`
-Inspect DAG task topology, checklist progress, dependencies, and readiness for parallel execution.
-Simple checklists under `# Tasks` work without a DAG or repeated Task SOP. Structured DAG export is optional and does not execute tasks.
+Inspect checklist progress and, for structured tasks, dependencies and parallel readiness.
+- **Behavior**: A plain `# Tasks` checklist is the default and needs no DAG. Only
+  `## Task <id>: <title>` sections (with `Builds`, `Blocked By`, `Parallel Group`,
+  `Verification`) form a structured DAG; anything else is reported as a plain checklist.
 - **Flags**:
-  - `--json`: Output full parsed task objects, DAG topology, and parallel groups as structured JSON.
-  - `--export-dag`: Output machine-readable subagent dispatch plan with unblocked tasks and execution prompts for parallel worker threads.
+  - `--json`: Output parsed tasks and parallel groups as structured JSON (includes `structured`).
+  - `--export-dag`: Output a subagent dispatch plan for unblocked tasks. Exits with an error
+    when `tasks.md` has no structured sections, because a plain checklist declares no
+    dependencies or verification commands. It emits data only; it never executes tasks.
 
 ```bash
 cabbage tasks user-oauth-login

@@ -41,10 +41,13 @@
 
 ## 可选 DAG
 
+普通 `# Tasks` 下的 `- [ ]` 清单是默认形式，不需要 DAG 或 Mermaid 图。
 仅在多任务确有依赖或需要派发时使用 `## Task <id>: <title>` 分节，以及
-`Builds`、`Blocked By`、`Parallel Group`、`Verification` 字段。
-`cabbage tasks --export-dag` 输出派发数据，不调度执行任务。
-普通 `# Tasks` 下的清单同样支持 `cabbage tasks`，不需要 Mermaid 图。
+`Builds`、`Blocked By`、`Parallel Group`、`Verification` 字段（字段名需完全匹配）。
+`Blocked By` 写任务 ID 或 `None`，多个用逗号分隔。
+
+`cabbage tasks <id>` 查看就绪与阻塞；`--export-dag` 输出派发数据，不调度执行任务。
+无结构化分节时 `--export-dag` 会报错而非伪造依赖，因为普通清单没有可派发的依赖信息。
 
 ## 当前事实与历史
 

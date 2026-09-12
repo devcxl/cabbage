@@ -97,6 +97,42 @@ cabbage discard <change-id>             # 放弃活动变更
 `verify` 失败返回 2；`validate`、`gate`、`ci` 报告错误返回 1。
 `next` 在所有阶段完成或跳过时返回 0，仍有待办但无可执行阶段时返回 2。
 
+## 任务分解与 DAG（按需）
+
+普通清单已足够：`# Tasks` 下的 `- [ ]` 列表就是默认形式，不需要 Mermaid 图或依赖声明。
+一套任务拆成两种粒度会失去意义，**只在真有并行或阻塞关系时才拆**。
+
+需要声明依赖时，用结构化分节（字段名固定，解析器按字面匹配）：
+
+```markdown
+## Task 1: 数据库表结构
+- **Builds**: 可观测的交付结果
+- **Blocked By**: None
+- **Parallel Group**: G1
+- **Verification**: `pytest tests/test_schema.py`
+- [ ] 建立表结构
+
+## Task 2: 登录接口
+- **Builds**: 登录能力
+- **Blocked By**: Task 1
+- **Parallel Group**: G2
+- **Verification**: `pytest tests/test_api.py`
+- [ ] 实现接口
+```
+
+要点：
+
+- `Blocked By` 写任务 ID（`Task 1`）或 `None`，多个用逗号分隔；不要写任务标题。
+- 只有写完整结构化分节才被识别为任务；否则按普通清单处理。
+- `cabbage tasks <id>` 查看就绪与阻塞情况，`--json` 输出结构化结果。
+- `--export-dag` 只在存在结构化分节时输出派发数据；普通清单会**报错并说明原因**，
+  不会凭空生成依赖。它只导出数据，不执行任务。
+- 派发数据中的 `verification` 来自任务自己的 `Verification` 字段；
+  普通清单没有该字段，因此不会被当作可派发任务。
+
+并行子代理与多方案比较按任务需要采用，不是所有变更的前置义务。
+复杂任务可先做目标拆解（分层拆到可独立执行），再落成结构化分节。
+
 ## 约束与排错
 
 - `verify` 检查结构、必需标题、占位符、未勾选清单、本地链接与 Mermaid 围栏，并记录内容指纹；
@@ -114,6 +150,7 @@ cabbage discard <change-id>             # 放弃活动变更
 | `placeholder content remains` | 清除 `TODO`/`TBD`/`FIXME` 及模板提示文本 |
 | `unchecked tasks remain` | 完成清单项后改为 `- [x]` |
 | `gate implementation: BLOCKED` | 用 `next` 找到未完成的已启用前置阶段并验证 |
+| `no structured DAG` | `--export-dag` 只接受结构化任务分节；普通清单无需导出 |
 | 阶段 `stale` | 对照上游变化重新审阅，再 `cabbage verify` |
 | `broken link` | 修正相对路径或锚点，见 `cabbage-docs` skill |
 

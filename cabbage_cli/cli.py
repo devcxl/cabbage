@@ -207,6 +207,12 @@ def cmd_tasks(a):
     root=project_root(); data=get_change_tasks_dag(root, a.change)
     if a.json: emit(data, True); return 0
     if a.export_dag:
+        if not data.get("structured"):
+            raise CabbageError(
+                f"no structured DAG in `{a.change}`/tasks.md: found only a plain checklist. "
+                "Use `## Task <id>: <title>` sections with Blocked By and Verification "
+                "to declare dependencies, or skip DAG export for this change."
+            )
         payload = {
             "change": data["change"],
             "summary": {
@@ -248,11 +254,15 @@ def cmd_tasks(a):
                 print(f"              Verification: {t['verification']}")
         print()
 
-    if data["ready_tasks"] > 0:
+    if data["ready_tasks"] > 0 and data.get("structured"):
         print("Ready to dispatch:")
         for grp_plan in data["subagent_dispatch_plan"]:
             for item in grp_plan["tasks"]:
                 print(f"  - {item['task_id']}: {item['title']} (Parallel Group: {grp_plan['parallel_group']})")
+    elif not data.get("structured"):
+        print("Plain checklist: no declared dependencies or verification commands.")
+        print("Verification results belong in the record's Verification section;")
+        print("use `## Task <id>: <title>` sections only when parallelism or blocking matters.")
     else:
         if data["completed_tasks"] == data["total_tasks"] and data["total_tasks"] > 0:
             print("All tasks in DAG completed. Ready for verification & gate.")
