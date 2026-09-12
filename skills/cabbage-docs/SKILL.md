@@ -86,9 +86,10 @@ last-reviewed: 2026-03-01
 
 ## 同族 skill
 
+- `cabbage`：总入口，选路与组合编排。
 - `cabbage-change`：变更流程、门禁与验证。
+- `cabbage-research`：技术选型与方案调研。
 - `cabbage-decision`：ADR/RFC 内容标准。
-- `cabbage-incident`：事故记录与复盘。
-- `cabbage-adopt`：存量文档盘点与迁移。
+- `cabbage-docs`：目录归属、命名、链接与站点构建。
 
-这些 skill 各自独立安装，不假设相对路径存在。
+各自独立安装，不假设相对路径或其他 skill 已存在。

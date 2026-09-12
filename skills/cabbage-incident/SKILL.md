@@ -65,9 +65,11 @@ cabbage archive payment-timeout-2026-08-29
 
 ## 同族 skill
 
+- `cabbage`：总入口，选路与组合编排。
 - `cabbage-change`：变更流程、影响标记、门禁与验证、hotfix 工作流。
+- `cabbage-research`：若复盘结论需要重新选型时转入。
 - `cabbage-decision`：ADR/RFC 决策记录。
 - `cabbage-docs`：目录归属、命名、链接规则与 Mermaid 图表。
 - `cabbage-adopt`：存量项目文档接入。
 
-这些 skill 各自独立安装，不假设相对路径存在。
+各自独立安装，不假设相对路径或其他 skill 已存在。

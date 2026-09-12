@@ -59,6 +59,24 @@ class RepositoryContractsTest(unittest.TestCase):
                         self.assertTrue((path.parent / target).resolve().is_file(),
                                         f'broken relative link: {target}')
 
+    def test_router_routes_to_every_sibling_skill(self):
+        names = {skill.name for skill in skill_dirs()}
+        router = ROOT / 'skills/cabbage/SKILL.md'
+        self.assertTrue(router.is_file(), 'missing the cabbage entry-point skill')
+        text = router.read_text()
+        routing = text.split('## 2. 选路')[1].split('## 3.')[0]
+        targets = set(re.findall(r'(?m)^\|[^|]+\|\s*`(cabbage(?:-[a-z]+)?)`\s*\|$', routing))
+        self.assertEqual(names - {'cabbage'}, targets,
+                         'routing table must name every sibling skill exactly once')
+
+    def test_router_references_only_existing_skills(self):
+        names = {skill.name for skill in skill_dirs()}
+        referenced = set(re.findall(r'`(cabbage(?:-[a-z]+)?)`',
+                                    (ROOT / 'skills/cabbage/SKILL.md').read_text()))
+        referenced.discard('cabbage')
+        self.assertEqual(set(), referenced - names,
+                         'router points at skills that do not exist')
+
     def test_no_legacy_skill_entrypoint_remains(self):
         self.assertFalse((ROOT / 'SKILL.md').exists(), 'use skills/<name>/SKILL.md instead')
         self.assertFalse((ROOT / 'references').exists(), 'reference docs live inside each skill')

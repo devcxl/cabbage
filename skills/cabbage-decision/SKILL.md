@@ -80,9 +80,11 @@ ADR 是决策记录，不是设计文档。以下内容属于其他文档：
 
 ## 同族 skill
 
+- `cabbage`：总入口，选路与组合编排。
 - `cabbage-change`：创建变更、影响标记、门禁与验证流程。
-- `cabbage-docs`：目录归属、命名、链接规则与 Mermaid 图表模板。
-- `cabbage-incident`：事故时间线与复盘。
-- `cabbage-adopt`：存量项目文档接入。
+- `cabbage-research`：调研产生结论后转入本 skill。
+- `cabbage-incident`：事故记录与复盘。
+- `cabbage-docs`：文档写作与站点。
+- `cabbage-adopt`：存量项目接入。
 
-这些 skill 各自独立安装，不假设相对路径存在。
+各自独立安装，不假设相对路径或其他 skill 已存在。

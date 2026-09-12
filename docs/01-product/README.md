@@ -16,9 +16,10 @@ Cabbage 通过仓库本地 Markdown、验证状态和 CI 保留变更依据，�
 
 ## 风险边界
 
-面向 agent 的分发形态是按任务场景拆分的五个 skill（见 `skills/`）：`cabbage-change` 覆盖变更流程与门禁，
-`cabbage-decision`、`cabbage-incident`、`cabbage-docs`、`cabbage-adopt` 分别负责决策记录、事故复盘、
-文档写作与存量接入。单个 skill 可独立安装，不依赖兄弟 skill。
+面向 agent 的分发形态是按任务场景拆分的七个 skill（见 `skills/`）：入口 `cabbage` 负责选路与组合编排，
+`cabbage-change` 覆盖变更流程与门禁，`cabbage-research` 负责调研与选型，其余分别负责决策记录、
+事故复盘、文档写作与存量接入。单个 skill 可独立安装，不依赖兄弟 skill。
+调研本身不建变更记录，结论需要落地时再由 `cabbage-change` 创建变更。
 
 | 影响 | 增加的文档 | 阶段 |
 | --- | --- | --- |

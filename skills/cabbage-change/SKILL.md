@@ -63,7 +63,8 @@ cabbage next update-api
 风险由人或 Agent 判断，CLI 不会自动推断。不要为少写文档而隐瞒实际影响；
 也只在确有风险时声明，普通发布不必标记 `deployment=true`。
 `product` 与 `testing` 的证据留在单份记录中，不另建重复的当前文档。
-写 ADR、RFC 的内容标准见 `cabbage-decision` skill。
+写 ADR、RFC 的内容标准见 `cabbage-decision` skill；需要先做技术选型或方案对比时，
+用 `cabbage-research` 得出结论再回来填写，调研本身不建变更记录。
 
 ## 其他变更类型
 
@@ -78,8 +79,6 @@ cabbage next update-api
 这些工作流的阶段与默认影响以 `.cabbage/workflows/<type>.yaml` 和 `next` 输出为准。
 不要假设任意影响字段都能凭空新增一个工作流未定义的阶段。
 纯文档更新可直接修改归属文档，写作用 `cabbage-docs` skill。
-
-写 ADR、RFC 的内容标准见 `cabbage-decision` skill。
 
 ## 命令与退出码
 
@@ -125,5 +124,13 @@ cabbage discard <change-id>             # 放弃活动变更
 - [验证规则与证据要求](references/validation.md)
 - [记录格式与高风险文档](references/document-types.md)
 
-同族 skill：`cabbage-decision`（ADR/RFC）、`cabbage-incident`（事故复盘）、
-`cabbage-docs`（文档写作与站点）、`cabbage-adopt`（存量项目接入）。
+## 同族 skill
+
+- `cabbage`：总入口，选路与组合编排。
+- `cabbage-research`：技术选型与方案调研（调研不建变更记录）。
+- `cabbage-decision`：ADR/RFC 内容标准。
+- `cabbage-incident`：事故复盘。
+- `cabbage-docs`：文档写作与站点。
+- `cabbage-adopt`：存量项目接入。
+
+各自独立安装，不假设相对路径或其他 skill 已存在。

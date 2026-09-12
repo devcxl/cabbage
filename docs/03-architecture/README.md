@@ -47,7 +47,8 @@ flowchart TD
 
 ## 说明书分发
 
-面向 agent 的操作说明是 `skills/` 下的五个场景 skill：`cabbage-change`（流程入口）、
+面向 agent 的操作说明是 `skills/` 下的七个场景 skill。入口 `cabbage` 只负责识别项目、
+按任务选路与组合编排，不描述具体流程；其余为 `cabbage-change`、`cabbage-research`、
 `cabbage-decision`、`cabbage-incident`、`cabbage-docs`、`cabbage-adopt`。
 每个 skill 自包含其最小闭环与所需 references，可单独安装。根目录不再提供 `SKILL.md` 与 `references/`。
 
@@ -55,7 +56,11 @@ flowchart TD
 而按流程阶段拆分会导致同一任务重复加载状态机知识。阶段真相保持在项目内
 （`.cabbage/workflows/*.yaml` 与 `cabbage next`），skill 不复制工作流定义。
 
-契约测试会校验每个 skill 的结构与相对链接，并阻止旧单文件入口回归。
+调研与复盘本身不建变更记录：调研阶段尚未定案，产物是报告；
+需要落地代码时再由 `cabbage-change` 创建变更。
+
+契约测试会校验每个 skill 的结构与相对链接，确保入口覆盖全部同族 skill，
+并阻止旧单文件入口回归。
 
 ## 新项目轻量工作流
 

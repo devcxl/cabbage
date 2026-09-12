@@ -110,8 +110,10 @@ cabbage sync update-api
 内容指纹不是身份签名，也不证明文档语义正确或记录不可篡改。
 应在托管平台配置必要的分支保护、人工审批和策略文件所有权。
 
-详细操作见 `skills/` 下的五个 skill：`cabbage-change`（变更流程与门禁）、`cabbage-decision`（ADR/RFC）、
-`cabbage-incident`（事故复盘）、`cabbage-docs`（文档写作与站点）、`cabbage-adopt`（存量接入与强制执行）。
+详细操作见 `skills/` 下的七个 skill。入口是 `cabbage`（选路与组合编排），
+其余按任务类型选择：`cabbage-change`（变更流程与门禁）、`cabbage-research`（调研与选型）、
+`cabbage-decision`（ADR/RFC）、`cabbage-incident`（事故复盘）、`cabbage-docs`（写作与站点）、
+`cabbage-adopt`（存量接入与强制执行）。
 
 ## 验证
 
