@@ -1,9 +1,7 @@
 from __future__ import annotations
-import hashlib, json, os, re, shutil, subprocess, tempfile
-from dataclasses import dataclass
+import hashlib, json, os, re, subprocess, tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 import yaml
 
 CABBAGE_DIR = ".cabbage"

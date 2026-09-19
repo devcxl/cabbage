@@ -1,5 +1,5 @@
 from __future__ import annotations
-import argparse, json, os, shutil, subprocess, sys
+import argparse, json, shutil, subprocess, sys
 from pathlib import Path
 from . import __version__
 from .core import *

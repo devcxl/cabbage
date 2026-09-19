@@ -139,7 +139,6 @@ def sync_impact_document(root: Path, change_id: str):
       "security":"Security","testing":"Testing","deployment":"Deployment","operations":"Operations",
       "data":"Data","performance":"Performance"
     }
-    import re
     text=p.read_text(encoding="utf-8")
     for key,label in labels.items():
         val="Yes" if spec.get("impact",{}).get(key,False) else "No"

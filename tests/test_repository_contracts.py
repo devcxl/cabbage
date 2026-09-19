@@ -1,4 +1,5 @@
 """Keep published commands and the checked-in CLI snapshot trustworthy."""
+import ast
 from pathlib import Path
 import os
 import re
@@ -23,6 +24,36 @@ def package_files(root):
 
 def skill_dirs():
     return sorted(p for p in (ROOT / 'skills').iterdir() if (p / 'SKILL.md').is_file())
+
+
+def imported_names(tree):
+    """Map every imported name to the line it was imported on."""
+    names = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                names[(alias.asname or alias.name).split('.')[0]] = node.lineno
+        elif isinstance(node, ast.ImportFrom):
+            if node.module == '__future__':
+                continue
+            for alias in node.names:
+                if alias.name != '*':
+                    names[alias.asname or alias.name] = node.lineno
+    return names
+
+
+def used_names(tree):
+    used = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            used.add(node.id)
+        elif isinstance(node, ast.Attribute):
+            base = node
+            while isinstance(base, ast.Attribute):
+                base = base.value
+            if isinstance(base, ast.Name):
+                used.add(base.id)
+    return used
 
 
 def skill_docs():
@@ -102,6 +133,18 @@ class RepositoryContractsTest(unittest.TestCase):
         for heading in ('Preconditions', 'Deployment', 'Rollback', 'Verification'):
             with self.subTest(heading=heading):
                 self.assertIn(heading, guide.read_text())
+
+    def test_no_unused_imports_in_cli_package(self):
+        for path in sorted((ROOT / 'cabbage_cli').glob('*.py')):
+            tree = ast.parse(path.read_text())
+            imported = imported_names(tree)
+            used = used_names(tree)
+            # A package's __init__ re-exports for consumers.
+            if path.name == '__init__.py':
+                continue
+            unused = sorted(n for n in imported if n not in used)
+            with self.subTest(path=path.name):
+                self.assertEqual([], unused, f'unused imports in {path.name}')
 
     def test_no_legacy_skill_entrypoint_remains(self):
         self.assertFalse((ROOT / 'SKILL.md').exists(), 'use skills/<name>/SKILL.md instead')
