@@ -1,7 +1,54 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const base = (process.env.BASE_URL || (process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` : '/')) as `/${string}/` | '/'
+
+// `cabbage init` creates the whole standard docs tree, so most categories start
+// empty. A hardcoded sidebar would link to pages that do not exist yet, so build
+// it from the directories that actually have an index page (README.md, which the
+// rewrites below map to index.md). Add a README.md to a category and it appears.
+const docsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const hasPage = (dir: string) => fs.existsSync(path.join(docsRoot, dir, 'README.md'))
+
+const group = (text: string, entries: [string, string][]) => ({
+  text,
+  collapsed: false,
+  items: entries
+    .filter(([dir]) => hasPage(dir))
+    .map(([dir, label]) => ({ text: `${label} (${dir})`, link: `/${dir}/` })),
+})
+
+const sidebar = [
+  group('项目概览', [['00-overview', '概览']]),
+  group('规范与设计', [
+    ['01-product', '产品需求'],
+    ['03-architecture', '系统架构'],
+    ['04-data', '数据设计'],
+    ['05-api', 'API 接口'],
+  ]),
+  group('质量与交付', [
+    ['08-testing', '测试计划'],
+    ['09-security', '安全评审'],
+    ['11-ci-cd', 'CI/CD 流程'],
+    ['12-release', '发布计划'],
+    ['13-operations', '运维'],
+    ['15-incidents', '事故记录'],
+  ]),
+].filter(section => section.items.length > 0)
+
+const navItems: [string, string][] = [
+  ['/', '首页'],
+  ['00-overview', '概览'],
+  ['01-product', '产品需求'],
+  ['03-architecture', '系统架构'],
+  ['05-api', 'API 接口'],
+  ['08-testing', '测试计划'],
+  ['11-ci-cd', 'CI/CD'],
+  ['12-release', '发布与变更'],
+]
 
 export default withMermaid(
   defineConfig({
@@ -15,46 +62,10 @@ export default withMermaid(
     title: 'Cabbage Documentation',
     description: 'Project documentation managed by Cabbage',
     themeConfig: {
-      nav: [
-        { text: '首页', link: '/' },
-        { text: '概览', link: '/00-overview/' },
-        { text: '产品需求', link: '/01-product/' },
-        { text: '系统架构', link: '/03-architecture/' },
-        { text: 'API 接口', link: '/05-api/' },
-        { text: '测试计划', link: '/08-testing/' },
-        { text: 'CI/CD', link: '/11-ci-cd/' },
-        { text: '发布与变更', link: '/12-release/' },
-      ],
-      sidebar: [
-        {
-          text: '项目概览',
-          collapsed: false,
-          items: [
-            { text: '概览', link: '/00-overview/' },
-          ],
-        },
-        {
-          text: '规范与设计',
-          collapsed: false,
-          items: [
-            { text: '产品需求 (01-product)', link: '/01-product/' },
-            { text: '系统架构 (03-architecture)', link: '/03-architecture/' },
-            { text: '数据设计 (04-data)', link: '/04-data/' },
-            { text: 'API 接口 (05-api)', link: '/05-api/' },
-          ],
-        },
-        {
-          text: '质量与交付',
-          collapsed: false,
-          items: [
-            { text: '测试计划 (08-testing)', link: '/08-testing/' },
-            { text: '安全评审 (09-security)', link: '/09-security/' },
-            { text: 'CI/CD 流程 (11-ci-cd)', link: '/11-ci-cd/' },
-            { text: '发布计划 (12-release)', link: '/12-release/' },
-            { text: '运维与事故 (13/15)', link: '/13-operations/' },
-          ],
-        },
-      ],
+      nav: navItems
+        .filter(([link]) => link === '/' || hasPage(link))
+        .map(([link, text]) => ({ text, link: link === '/' ? '/' : `/${link}/` })),
+      sidebar,
       search: {
         provider: 'local',
       },

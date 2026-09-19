@@ -7,11 +7,8 @@ hero:
   tagline: "小变更一份记录，高风险才增加专项文档"
   actions:
     - theme: brand
-      text: 快速开始
-      link: /00-overview/
-    - theme: alt
-      text: 查看架构
-      link: /03-architecture/
+      text: 工作流概览
+      link: '#工作流全景'
 
 features:
   - title: 工作流门禁 (Workflow Gates)
