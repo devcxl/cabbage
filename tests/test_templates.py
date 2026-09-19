@@ -152,25 +152,30 @@ class TemplateTest(unittest.TestCase):
                     self.assertRegex(text, re.compile(pattern, flags=re.M | re.I))
 
     def test_impact_template_preserves_sync_rows(self):
+        from cabbage_cli.scaffold import IMPACT_FIELDS
         template = resources.files("cabbage_cli").joinpath(
             "assets", "templates", "impact.md"
         )
         text = template.read_text(encoding="utf-8")
-        areas = (
-            "Product",
-            "Architecture",
-            "API",
-            "Database",
-            "Security",
-            "Testing",
-            "Deployment",
-            "Operations",
-            "Data",
-            "Performance",
-        )
-
-        for area in areas:
-            self.assertRegex(text, rf"(?m)^\| {area} \| (?:Yes|No) \|")
+        sync_labels = {
+            "product": "Product",
+            "architecture": "Architecture",
+            "api": "API",
+            "database": "Database",
+            "security": "Security",
+            "testing": "Testing",
+            "deployment": "Deployment",
+            "operations": "Operations",
+            "performance": "Performance",
+        }
+        # Every declared impact field needs a syncable table row, and the
+        # template must not carry rows for fields the CLI no longer accepts.
+        for field in IMPACT_FIELDS:
+            with self.subTest(field=field):
+                self.assertIn(field, sync_labels, "no table label for this impact field")
+                self.assertRegex(text, rf"(?m)^\| {sync_labels[field]} \| (?:Yes|No) \|")
+        self.assertEqual(set(IMPACT_FIELDS), set(sync_labels))
+        self.assertNotRegex(text, r"(?m)^\| Data \| (?:Yes|No) \|")
 
     def test_specialized_templates_contain_review_structure(self):
         template_dir = resources.files("cabbage_cli").joinpath("assets", "templates")

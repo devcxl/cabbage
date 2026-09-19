@@ -180,6 +180,21 @@ class RepositoryContractsTest(unittest.TestCase):
                     self.assertIn(directory, section,
                                   f'guide omits `{directory}` for impact `{area}`')
 
+    def test_every_adoption_category_has_a_target(self):
+        """`data` is an adoption category, not an impact field; do not conflate them."""
+        from cabbage_cli.scaffold import (
+            ADOPTION_CATEGORY_RULES,
+            ADOPTION_TARGET_BY_CATEGORY,
+            IMPACT_FIELDS,
+        )
+        categories = [name for name, _ in ADOPTION_CATEGORY_RULES]
+        missing = sorted(set(categories) - set(ADOPTION_TARGET_BY_CATEGORY))
+        self.assertEqual([], missing,
+                         'every adoption category needs a target directory')
+        self.assertIn('data', categories, 'database documents must stay classifiable')
+        self.assertNotIn('data', IMPACT_FIELDS,
+                         'the redundant `data` impact field was removed on purpose')
+
     def test_no_legacy_skill_entrypoint_remains(self):
         self.assertFalse((ROOT / 'SKILL.md').exists(), 'use skills/<name>/SKILL.md instead')
         self.assertFalse((ROOT / 'references').exists(), 'reference docs live inside each skill')

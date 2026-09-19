@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 from .core import CabbageError, dump_yaml, load_config, load_yaml, change_dir, now_iso, project_root
 
-IMPACT_FIELDS=["product","architecture","api","database","security","testing","deployment","operations","data","performance"]
+IMPACT_FIELDS=["product","architecture","api","database","security","testing","deployment","operations","performance"]
 
 ADOPTION_IGNORED_DIRS={".git",".cabbage",".github",".idea",".vscode",".venv","venv","node_modules","__pycache__","dist","build","target","coverage","site",".cache",".temp",".vitepress",".vuepress","vendor"}
 
@@ -86,7 +86,6 @@ def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
           "testing":["docs/08-testing/"],
           "deployment":["docs/10-infrastructure/","docs/11-ci-cd/","docs/12-release/"],
           "operations":["docs/13-operations/"],
-          "data":["docs/04-domain/"],
           "performance":["docs/14-performance/"]
         }
       },
@@ -137,7 +136,7 @@ def sync_impact_document(root: Path, change_id: str):
     labels={
       "product":"Product","architecture":"Architecture","api":"API","database":"Database",
       "security":"Security","testing":"Testing","deployment":"Deployment","operations":"Operations",
-      "data":"Data","performance":"Performance"
+      "performance":"Performance"
     }
     text=p.read_text(encoding="utf-8")
     for key,label in labels.items():

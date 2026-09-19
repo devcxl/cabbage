@@ -62,7 +62,7 @@
 | `product` | `docs/01-product/` |
 | `architecture` | `docs/03-architecture/` |
 | `api` | `docs/05-api/` |
-| `database`、`data` | `docs/04-domain/` |
+| `database` | `docs/04-domain/` |
 | `security` | `docs/09-security/` |
 | `testing` | `docs/08-testing/` |
 | `deployment` | `docs/10-infrastructure/`、`docs/11-ci-cd/`、`docs/12-release/` |

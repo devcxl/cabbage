@@ -8,7 +8,6 @@ impact_fields:
 - testing
 - deployment
 - operations
-- data
 - performance
 ci:
   require_change_for_code: true
@@ -38,8 +37,6 @@ ci:
     - docs/12-release/
     operations:
     - docs/13-operations/
-    data:
-    - docs/04-domain/
     performance:
     - docs/14-performance/
 docs:

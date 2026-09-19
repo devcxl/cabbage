@@ -22,7 +22,6 @@ change_type: {{CHANGE_TYPE}}
 | Testing | Yes | |
 | Deployment | No | |
 | Operations | No | |
-| Data | No | |
 | Performance | No | |
 
 # Impact Details
