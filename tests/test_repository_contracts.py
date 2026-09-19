@@ -146,6 +146,40 @@ class RepositoryContractsTest(unittest.TestCase):
             with self.subTest(path=path.name):
                 self.assertEqual([], unused, f'unused imports in {path.name}')
 
+    def test_directory_guide_matches_sync_mapping(self):
+        """The directory guide lists sync targets; keep it equal to the code."""
+        from cabbage_cli.core import DEFAULT_STAGE_DOCS_MAPPING
+        guide = (ROOT / 'skills/cabbage-docs/references/directory-structure.md').read_text()
+        section = guide.split('## `sync` 写入的目录')[1].split('## 门禁检查的目录')[0]
+        # Build the documented stage -> directory map, handling the combined row.
+        rows = re.findall(r'(?m)^\|\s*`([a-z]+)`(?:\s*/\s*`([a-z]+)`)?\s*\|\s*`docs/([^`]+)/`\s*\|', section)
+        documented = {}
+        for stage, second, directory in rows:
+            documented[stage] = directory
+            if second:
+                documented[second] = directory
+        for stage, target in DEFAULT_STAGE_DOCS_MAPPING.items():
+            directory = target.rsplit('/{change_id}', 1)[0]
+            with self.subTest(stage=stage):
+                self.assertEqual(directory, documented.get(stage),
+                                 f'guide disagrees with sync mapping for `{stage}`')
+
+    def test_directory_guide_matches_ci_rules(self):
+        from cabbage_cli.scaffold import IMPACT_FIELDS
+        cfg = yaml.safe_load((ROOT / '.cabbage/config.yaml').read_text())
+        rules = cfg['ci']['current_state_rules']
+        guide = (ROOT / 'skills/cabbage-docs/references/directory-structure.md').read_text()
+        section = guide.split('## 门禁检查的目录')[1]
+        for area in IMPACT_FIELDS:
+            if area not in rules:
+                continue
+            expected = rules[area]
+            with self.subTest(area=area):
+                # Every configured directory must be named in the guide's table.
+                for directory in expected:
+                    self.assertIn(directory, section,
+                                  f'guide omits `{directory}` for impact `{area}`')
+
     def test_no_legacy_skill_entrypoint_remains(self):
         self.assertFalse((ROOT / 'SKILL.md').exists(), 'use skills/<name>/SKILL.md instead')
         self.assertFalse((ROOT / 'references').exists(), 'reference docs live inside each skill')

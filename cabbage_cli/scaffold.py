@@ -14,7 +14,7 @@ ADOPTION_CATEGORY_RULES=[
     ("rfc",{"rfc","proposal","proposals"}),
     ("incident",{"incident","incidents","postmortem","postmortems","retrospective","retro"}),
     ("api",{"api","apis","openapi","swagger","webhook","webhooks"}),
-    ("data",{"database","databases","db","schema","schemas","migration","migrations","erd","datamodel"}),
+    ("data",{"database","databases","db","schema","schemas","migration","migrations","erd","datamodel","domain","domains"}),
     ("security",{"security","threat","threats"}),
     ("testing",{"test","tests","testing","qa","e2e"}),
     ("infrastructure",{"infrastructure","infra","kubernetes","k8s","terraform","helm","ansible"}),
@@ -31,7 +31,7 @@ ADOPTION_CATEGORY_RULES=[
 
 ADOPTION_TARGET_BY_CATEGORY={
     "adr":"docs/03-architecture/adr","rfc":"docs/03-architecture/rfc","incident":"docs/15-incidents",
-    "product":"docs/01-product","architecture":"docs/03-architecture","data":"docs/04-data","api":"docs/05-api",
+    "product":"docs/01-product","architecture":"docs/03-architecture","data":"docs/04-domain","api":"docs/05-api",
     "development":"docs/06-development","testing":"docs/08-testing","security":"docs/09-security",
     "infrastructure":"docs/10-infrastructure","ci-cd":"docs/11-ci-cd","release":"docs/12-release",
     "operations":"docs/13-operations","performance":"docs/14-performance","compliance":"docs/17-compliance",
@@ -48,7 +48,7 @@ ADOPTION_CONFORMING_AREAS={
 
 ALL_CONFORMING_DIRS = [
     "00-overview", "01-product", "02-design", "03-architecture/adr", "03-architecture/rfc",
-    "03-architecture/system-design", "04-data", "05-api", "06-development", "07-standards",
+    "03-architecture/system-design", "04-domain", "05-api", "06-development", "07-standards",
     "08-testing", "09-security", "10-infrastructure", "11-ci-cd", "12-release",
     "13-operations", "14-performance", "15-incidents", "16-dependencies", "17-compliance"
 ]
@@ -81,12 +81,12 @@ def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
           "product":["docs/01-product/"],
           "architecture":["docs/03-architecture/"],
           "api":["docs/05-api/"],
-          "database":["docs/04-data/"],
+          "database":["docs/04-domain/"],
           "security":["docs/09-security/"],
           "testing":["docs/08-testing/"],
           "deployment":["docs/10-infrastructure/","docs/11-ci-cd/","docs/12-release/"],
           "operations":["docs/13-operations/"],
-          "data":["docs/04-data/"],
+          "data":["docs/04-domain/"],
           "performance":["docs/14-performance/"]
         }
       },

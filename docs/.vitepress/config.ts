@@ -26,7 +26,7 @@ const sidebar = [
   group('规范与设计', [
     ['01-product', '产品需求'],
     ['03-architecture', '系统架构'],
-    ['04-data', '数据设计'],
+    ['04-domain', '数据设计'],
     ['05-api', 'API 接口'],
   ]),
   group('质量与交付', [

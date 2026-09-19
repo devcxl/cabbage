@@ -15,15 +15,27 @@ description: Write and organize long-lived project documentation in a Cabbage re
 | --- | --- |
 | `00-overview/` | 项目概览、范围、快速上手 |
 | `01-product/` | 需求、用户故事、验收标准 |
+| `02-design/` | 交互与视觉设计、原型说明 |
 | `03-architecture/` | 系统设计、`adr/`、`rfc/` |
-| `04-data/` | 数据模型、数据库设计、迁移 |
+| `04-domain/` | 数据模型、数据库设计、迁移与回滚 |
 | `05-api/` | 接口契约、事件、集成 |
+| `06-development/` | 本地开发环境、构建与调试 |
+| `07-standards/` | 编码规范、评审约定 |
 | `08-testing/` | 测试策略与用例 |
 | `09-security/` | 威胁模型、权限与合规控制 |
-| `11-ci-cd/`、`12-release/` | 流水线与发布 |
+| `10-infrastructure/` | 部署拓扑、容量、环境配置 |
+| `11-ci-cd/` | 流水线定义与门禁说明 |
+| `12-release/` | 发布流程与版本策略 |
 | `13-operations/` | 运行手册、监控、应急预案 |
+| `14-performance/` | 性能基线与压测结果 |
+| `15-incidents/` | 事故记录与复盘（不可改写的历史） |
+| `16-dependencies/` | 外部依赖清单与升级策略 |
+| `17-compliance/` | 合规要求与审计证据 |
 
-完整列表见 [目录布局](references/directory-structure.md)。
+其中 `01-product`、`03-architecture`（含 `adr`、`rfc`、`system-design`）、`04-domain`、`05-api`、
+`08-testing`、`09-security`、`12-release`、`15-incidents` 同时是 `cabbage sync` 的写入目标；
+`10-infrastructure`、`11-ci-cd`、`12-release` 是 `deployment` 影响可接受的目录。
+完整映射与判定规则见 [目录布局](references/directory-structure.md)。
 `.cabbage/changes/` 是变更历史，`docs/` 是当前状态，两者不互相复制内容。
 
 ## 写作原则

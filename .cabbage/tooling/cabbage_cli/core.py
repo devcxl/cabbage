@@ -332,7 +332,7 @@ DEFAULT_STAGE_DOCS_MAPPING = {
     "adr": "03-architecture/adr/{change_id}.md",
     "rfc": "03-architecture/rfc/{change_id}.md",
     "api": "05-api/{change_id}.md",
-    "database": "04-data/{change_id}.md",
+    "database": "04-domain/{change_id}.md",
     "security": "09-security/{change_id}.md",
     "tests": "08-testing/{change_id}.md",
     "release": "12-release/{change_id}.md",

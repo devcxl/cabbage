@@ -25,7 +25,7 @@
 | --- | --- | --- | --- |
 | `adr` | `adr.md` | Context, Decision, Consequences | `docs/03-architecture/adr/` |
 | `api` | `api-design.md` | Contract, Compatibility | `docs/05-api/` |
-| `database` | `database-design.md` | Schema, Migration, Rollback | `docs/04-data/` |
+| `database` | `database-design.md` | Schema, Migration, Rollback | `docs/04-domain/` |
 | `security` | `security-review.md` | Threats, Controls | `docs/09-security/` |
 | `release` | `release-plan.md` | Deployment, Rollback, Verification | `docs/12-release/` |
 

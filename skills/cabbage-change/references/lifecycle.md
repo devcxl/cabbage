@@ -71,7 +71,7 @@ Specifications produced during a change are synchronized into persistent, long-l
 
 - **Sync Targets**:
   - `api-design.md` -> `docs/05-api/`
-  - `database-design.md` -> `docs/04-data/`
+  - `database-design.md` -> `docs/04-domain/`
   - `adr.md` -> `docs/03-architecture/adr/`
   - `rfc.md` -> `docs/03-architecture/rfc/`
 - **When to Sync**:

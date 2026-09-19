@@ -27,7 +27,7 @@ ci:
     api:
     - docs/05-api/
     database:
-    - docs/04-data/
+    - docs/04-domain/
     security:
     - docs/09-security/
     testing:
@@ -39,7 +39,7 @@ ci:
     operations:
     - docs/13-operations/
     data:
-    - docs/04-data/
+    - docs/04-domain/
     performance:
     - docs/14-performance/
 docs:
