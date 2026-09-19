@@ -1,5 +1,6 @@
 from __future__ import annotations
 import argparse, json, shutil, subprocess, sys
+from datetime import datetime
 from pathlib import Path
 from . import __version__
 from .core import *
@@ -112,7 +113,7 @@ def cmd_status(a):
         else:
             for x in items: print(f"{x['status']:7} {x['id']:16} {x.get('artifact') or ''}")
     else:
-        dirs=root/".cabbage/changes"; rows=[]
+        dirs=changes_root(root); rows=[]
         for p in sorted(dirs.iterdir() if dirs.exists() else []):
             if p.is_dir() and (p/"change.yaml").exists():
                 st=stage_statuses(root,p.name); rows.append({"change":p.name,"done":sum(x['status']=='done' for x in st),"total":sum(x['status']!='skipped' for x in st),"stale":sum(x['status']=='stale' for x in st)})
@@ -145,7 +146,7 @@ def cmd_validate(a):
     root=project_root(); errors=[]
     ids=[]
     if a.all:
-        ids=[p.name for p in (root/'.cabbage/changes').iterdir() if p.is_dir() and (p/'change.yaml').exists()]
+        ids=[p.name for p in changes_root(root).iterdir() if p.is_dir() and (p/'change.yaml').exists()]
     elif a.change: ids=[a.change]
     else: raise CabbageError("provide a change id or --all")
     for cid in ids: errors.extend(f"{cid}: {e}" for e in validate_change(root,cid))
@@ -181,8 +182,7 @@ def cmd_archive(a):
     if errors: raise CabbageError("archive gate blocked:\n"+'\n'.join(errors))
     synced=sync_change_to_docs(root,a.change)
     d=change_dir(root,a.change); spec=load_yaml(d/'change.yaml'); spec['status']='archived'; dump_yaml(d/'change.yaml',spec)
-    from datetime import datetime
-    dest=root/'.cabbage/archive'/datetime.now().strftime('%Y')/a.change; dest.parent.mkdir(parents=True,exist_ok=True)
+    dest=archive_root(root)/datetime.now().strftime('%Y')/a.change; dest.parent.mkdir(parents=True,exist_ok=True)
     if dest.exists(): raise CabbageError(f"archive destination exists: {dest}")
     shutil.move(str(d),str(dest))
     if synced:

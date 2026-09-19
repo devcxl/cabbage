@@ -3,7 +3,8 @@ import shutil
 from importlib import resources
 from pathlib import Path
 import re
-from .core import CabbageError, dump_yaml, load_config, load_yaml, change_dir, now_iso, project_root
+from .core import (CabbageError, dump_yaml, load_config, load_yaml, change_dir, now_iso,
+                   project_root, workflow, condition_enabled, CABBAGE_DIR)
 
 IMPACT_FIELDS=["product","architecture","api","database","security","testing","deployment","operations","performance"]
 
@@ -66,9 +67,9 @@ def copy_asset_tree(src_rel: str, dst: Path, overwrite: bool=False):
             target.write_bytes(item.read_bytes())
 
 def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
-    d=root/".cabbage"
+    d=root/CABBAGE_DIR
     if (d/"config.yaml").exists() and not force:
-        raise CabbageError(".cabbage already initialized; use --force to refresh missing scaffold files")
+        raise CabbageError(f"{CABBAGE_DIR} already initialized; use --force to refresh missing scaffold files")
     d.mkdir(parents=True,exist_ok=True)
     cfg={
       "version":1,
@@ -117,7 +118,7 @@ def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
 def sync_vendored_cli(root: Path):
     """Regenerate the repository-local CLI from the installed source package."""
     pkg = Path(__file__).resolve().parent
-    target = root / ".cabbage/tooling/cabbage_cli"
+    target = root / CABBAGE_DIR / "tooling/cabbage_cli"
     if pkg == target.resolve():
         raise CabbageError("cannot refresh vendored CLI from itself; use the source package")
     if target.exists():
@@ -147,8 +148,7 @@ def sync_impact_document(root: Path, change_id: str):
 
 def ensure_artifacts(root: Path, change_id: str):
     spec=load_yaml(change_dir(root,change_id)/"change.yaml")
-    wf=load_yaml(root/".cabbage/workflows"/f"{spec['type']}.yaml")
-    from .core import condition_enabled
+    wf,_=workflow(root,spec["type"])
     for st in wf.get("stages",[]):
         if condition_enabled(st,spec) and st.get("artifact"):
             p=change_dir(root,change_id)/st["artifact"]
@@ -159,10 +159,9 @@ def ensure_artifacts(root: Path, change_id: str):
 
 def new_change(root: Path, change_type: str, change_id: str):
     cfg=load_config(root)
-    wf=root/".cabbage/workflows"/f"{change_type}.yaml"
-    if not wf.exists(): raise CabbageError(f"unknown change type: {change_type}")
     if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*",change_id):
         raise CabbageError("change id must be kebab-case")
+    workflow(root,change_type)  # raises `unknown change type` when missing
     d=change_dir(root,change_id)
     if d.exists(): raise CabbageError(f"change already exists: {change_id}")
     d.mkdir(parents=True)
@@ -266,7 +265,7 @@ def adopt_project(root: Path, apply: bool = False) -> dict:
             return res
 
     report=render_adoption_report(root,rows)
-    out=root/".cabbage/adoption-report.md"
+    out=root/CABBAGE_DIR/"adoption-report.md"
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(report,encoding="utf-8")
     return {"report":str(out.relative_to(root)),"counts":counts,"documents":rows, "applied": applied}

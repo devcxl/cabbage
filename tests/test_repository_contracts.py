@@ -195,6 +195,48 @@ class RepositoryContractsTest(unittest.TestCase):
         self.assertNotIn('data', IMPACT_FIELDS,
                          'the redundant `data` impact field was removed on purpose')
 
+    def test_no_function_level_imports(self):
+        """Imports belong at module scope; the only exception is probing an
+        optional dependency inside try/except so the failure can be reported."""
+        for path in sorted((ROOT / 'cabbage_cli').glob('*.py')):
+            if path.name == '__init__.py':
+                continue
+            tree = ast.parse(path.read_text())
+            for fn in ast.walk(tree):
+                if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                guarded = set()
+                for node in ast.walk(fn):
+                    if isinstance(node, ast.Try):
+                        for sub in node.body:
+                            if isinstance(sub, (ast.Import, ast.ImportFrom)):
+                                guarded.add(id(sub))
+                for node in fn.body:
+                    if isinstance(node, (ast.Import, ast.ImportFrom)) and id(node) not in guarded:
+                        with self.subTest(path=path.name, function=fn.name, line=node.lineno):
+                            self.fail(f'import inside {fn.name}() at line {node.lineno}')
+
+    def test_no_dead_module_level_functions(self):
+        """Every helper must have a caller; a leftover helper silently rots."""
+        for path in sorted((ROOT / 'cabbage_cli').glob('*.py')):
+            if path.name == '__init__.py':
+                continue
+            tree = ast.parse(path.read_text())
+            defined = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)}
+            referenced = set()
+            for other in sorted((ROOT / 'cabbage_cli').glob('*.py')):
+                if other.name == '__init__.py':
+                    continue
+                other_tree = ast.parse(other.read_text())
+                for node in ast.walk(other_tree):
+                    if isinstance(node, ast.Name):
+                        referenced.add(node.id)
+                    if isinstance(node, ast.Attribute):
+                        referenced.add(node.attr)
+            unused = sorted(name for name in defined if name not in referenced)
+            with self.subTest(path=path.name):
+                self.assertEqual([], unused, f'no caller for {path.name} helpers')
+
     def test_no_legacy_skill_entrypoint_remains(self):
         self.assertFalse((ROOT / 'SKILL.md').exists(), 'use skills/<name>/SKILL.md instead')
         self.assertFalse((ROOT / 'references').exists(), 'reference docs live inside each skill')

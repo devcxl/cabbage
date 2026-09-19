@@ -88,13 +88,21 @@ def load_config(root: Path) -> dict:
     return load_yaml(root / CABBAGE_DIR / "config.yaml")
 
 def change_dir(root: Path, change_id: str) -> Path:
-    return root / CABBAGE_DIR / "changes" / change_id
+    return changes_root(root) / change_id
+
+def changes_root(root: Path) -> Path:
+    return root / CABBAGE_DIR / "changes"
+
+def archive_root(root: Path) -> Path:
+    return root / CABBAGE_DIR / "archive"
 
 def change_spec(root: Path, change_id: str) -> dict:
     return load_yaml(change_dir(root, change_id) / "change.yaml")
 
 def workflow(root: Path, change_type: str) -> tuple[dict, Path]:
     p = root / CABBAGE_DIR / "workflows" / f"{change_type}.yaml"
+    if not p.exists():
+        raise CabbageError(f"unknown change type: {change_type}")
     return load_yaml(p), p
 
 def state_path(root: Path, change_id: str) -> Path:
@@ -302,7 +310,7 @@ def validate_markdown(root: Path, change_id: str, stage: dict, verification: boo
         boxes=re.findall(r"^\s*[-*]\s+\[([ xX\-\/])\]", body, flags=re.M)
         if not boxes:
             errors.append(f"{stage['id']}: expected at least one task checkbox")
-        if verification and any(x.strip() in {"", " "} for x in boxes):
+        if verification and any(x.strip() == "" for x in boxes):
             errors.append(f"{stage['id']}: unchecked implementation tasks remain")
     return errors
 
@@ -612,10 +620,7 @@ def get_change_tasks_dag(root: Path, change_id: str) -> dict:
     if not tasks_file.exists():
         raise CabbageError(f"tasks.md not found for change `{change_id}`")
     content = tasks_file.read_text(encoding="utf-8")
-    meta, body = parse_frontmatter(content)
+    body = parse_frontmatter(content)[1]
     result = parse_tasks_markdown(body)
     result["change"] = change_id
     return result
-
-def run(cmd: list[str], cwd: Path) -> int:
-    return subprocess.call(cmd,cwd=cwd)
