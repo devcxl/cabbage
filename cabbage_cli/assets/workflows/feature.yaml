@@ -1,4 +1,3 @@
-name: feature
 # Product intent and test evidence live in the single change record.
 record_covers: [product, testing]
 stages:

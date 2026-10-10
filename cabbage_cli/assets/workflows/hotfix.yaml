@@ -1,4 +1,3 @@
-name: hotfix
 stages:
   - {id: impact, artifact: impact.md, template: impact.md, required_headings: [Impact Matrix, Risks]}
   - {id: tests, artifact: test-plan.md, template: test-plan.md, depends_on: [impact], required_headings: [Strategy, Cases]}

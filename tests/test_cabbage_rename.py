@@ -110,7 +110,7 @@ class CabbageRenameTest(unittest.TestCase):
 
             self.assertEqual(0, init_result.returncode, init_result.stderr)
             self.assertEqual(0, version_result.returncode, version_result.stderr)
-            self.assertEqual("0.1.0", version_result.stdout.strip())
+            self.assertEqual("0.1.2", version_result.stdout.strip())
 
 
 if __name__ == "__main__":

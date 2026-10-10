@@ -1,6 +1,6 @@
 # 发布说明
 
-Cabbage 当前版本为 `0.1.0`。`.github/workflows/release-draft.yml` 在 `v*` 标签推送时运行测试、构建 Python 包和 Debian 包，并创建 GitHub 草稿 Release；不自动发布到公共 PyPI。
+Cabbage 当前版本为 `0.1.2`。`.github/workflows/release-draft.yml` 在 `v*` 标签推送时运行测试、构建 Python 包和 Debian 包，并创建 GitHub 草稿 Release；不自动发布到公共 PyPI。
 
 ## 发布物
 
@@ -16,7 +16,7 @@ Cabbage 当前版本为 `0.1.0`。`.github/workflows/release-draft.yml` 在 `v*`
 
 - Python：3.10 及以上。
 - 运行依赖：PyYAML 6.0 及以上。
-- 当前包版本与 `cabbage --version`：`0.1.0`。
+- 当前包版本与 `cabbage --version`：`0.1.2`。
 - 文档构建环境：Node.js 22、pnpm 10。
 
 ## 发布前检查
@@ -47,7 +47,7 @@ cabbage gate <change-id> merge
 
 ## 版本与变更记录
 
-版本号同时存在于 `pyproject.toml` 和 `cabbage_cli/__init__.py`，发布时必须保持一致。变更文档保存在 `.cabbage/changes/`，完成后通过 `cabbage archive <change-id>` 移入按年份组织的归档目录。
+版本号唯一来源于 `cabbage_cli/__init__.py`，`pyproject.toml` 通过 `[tool.setuptools.dynamic]` 动态读取它。变更文档保存在 `.cabbage/changes/`，完成后通过 `cabbage archive <change-id>` 移入按年份组织的归档目录。
 
 ## 回滚原则
 

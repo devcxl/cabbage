@@ -1,4 +1,3 @@
-name: integration
 stages:
   - {id: requirement, artifact: prd.md, template: prd.md, required_headings: [Goal, Scope, Acceptance Criteria]}
   - {id: impact, artifact: impact.md, template: impact.md, depends_on: [requirement], required_headings: [Impact Matrix, Risks]}
