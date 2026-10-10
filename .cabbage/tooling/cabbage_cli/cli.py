@@ -28,6 +28,8 @@ def cmd_adopt(a):
         print(f"migrated {len(data['applied'])} document(s):")
         for item in data["applied"]:
             print(f"  {item['from']}  ->  {item['to']}")
+    for w in data.get("warnings", []):
+        print(f"warning: {w}")
     counts=data["counts"]
     print(f"adoption report written to {data['report']}")
     print(f"documents: {sum(counts.values())} total; keep={counts['keep']} migrate={counts['migrate']} import={counts['import']} review={counts['review']}")

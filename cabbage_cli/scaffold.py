@@ -236,6 +236,7 @@ def adopt_project(root: Path, apply: bool = False) -> dict:
         rows.append({"path":str(rel).replace("\\","/"),"action":action,"category":category,"target":target})
 
     applied = []
+    warnings = []
     if apply:
         for r in rows:
             if r["action"] in {"migrate", "import"} and r["target"]:
@@ -251,21 +252,22 @@ def adopt_project(root: Path, apply: bool = False) -> dict:
                             if not text.startswith("---\n"):
                                 fm = f"---\ncategory: {r['category']}\nadopted_at: {now_iso()}\n---\n\n"
                                 dst_path.write_text(fm + text, encoding="utf-8")
-                        except Exception:
-                            pass
+                        except (OSError, UnicodeDecodeError) as e:
+                            warnings.append(f"{dst_path.relative_to(root)}: frontmatter not added ({e})")
                     applied.append({"from": r["path"], "to": str(dst_path.relative_to(root)).replace("\\", "/")})
 
         if applied:
             # Re-scan after applying
             res = adopt_project(root, apply=False)
             res["applied"] = applied
+            res["warnings"] = warnings + res.get("warnings", [])
             return res
 
     report=render_adoption_report(root,rows)
     out=root/CABBAGE_DIR/"adoption-report.md"
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(report,encoding="utf-8")
-    return {"report":str(out.relative_to(root)),"counts":counts,"documents":rows, "applied": applied}
+    return {"report":str(out.relative_to(root)),"counts":counts,"documents":rows, "applied": applied, "warnings": warnings}
 
 def render_adoption_report(root: Path, rows: list[dict]) -> str:
     docs_name=load_config(root).get("docs",{}).get("dir","docs")
