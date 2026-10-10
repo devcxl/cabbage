@@ -6,7 +6,12 @@ import re
 from .core import (CabbageError, dump_yaml, load_config, load_yaml, change_dir, now_iso,
                    project_root, workflow, condition_enabled, write_text_atomic, CABBAGE_DIR)
 
-IMPACT_FIELDS=["product","architecture","api","database","security","testing","deployment","operations","performance"]
+IMPACT_FIELD_LABELS={
+  "product":"Product","design":"Design","architecture":"Architecture","rfc":"RFC","api":"API","database":"Database",
+  "security":"Security","testing":"Testing","deployment":"Deployment","operations":"Operations",
+  "performance":"Performance"
+}
+IMPACT_FIELDS=list(IMPACT_FIELD_LABELS)
 
 ADOPTION_IGNORED_DIRS={".git",".cabbage",".github",".idea",".vscode",".venv","venv","node_modules","__pycache__","dist","build","target","coverage","site",".cache",".temp",".vitepress",".vuepress","vendor"}
 
@@ -134,13 +139,8 @@ def sync_impact_document(root: Path, change_id: str):
     p=change_dir(root,change_id)/"impact.md"
     if not p.exists(): return
     spec=load_yaml(change_dir(root,change_id)/"change.yaml")
-    labels={
-      "product":"Product","architecture":"Architecture","api":"API","database":"Database",
-      "security":"Security","testing":"Testing","deployment":"Deployment","operations":"Operations",
-      "performance":"Performance"
-    }
     text=p.read_text(encoding="utf-8")
-    for key,label in labels.items():
+    for key,label in IMPACT_FIELD_LABELS.items():
         val="Yes" if spec.get("impact",{}).get(key,False) else "No"
         pattern=rf"^(\|\s*{re.escape(label)}\s*\|)\s*(Yes|No)\s*(\|.*)$"
         text=re.sub(pattern,rf"\1 {val} \3",text,flags=re.M|re.I)
@@ -167,8 +167,9 @@ def new_change(root: Path, change_type: str, change_id: str):
     d.mkdir(parents=True)
     spec={"id":change_id,"type":change_type,"status":"active","impact":{k:False for k in cfg.get("impact_fields",[])}}
     # Defaults declare only impacts the workflow can produce evidence for; the rest stay false for explicit opt-in.
+    # Legacy types keep their defaults so existing projects behave exactly as before the new-project model.
     if change_type!="incident": spec["impact"]["testing"]=True
-    if change_type=="feature": spec["impact"]["product"]=True
+    if change_type=="change" or change_type=="feature": spec["impact"]["product"]=True
     if change_type=="architecture": spec["impact"]["architecture"]=True
     if change_type in {"migration"}: spec["impact"]["database"]=True; spec["impact"]["deployment"]=True
     if change_type=="integration": spec["impact"]["api"]=True
@@ -303,7 +304,7 @@ def render_adoption_report(root: Path, rows: list[dict]) -> str:
         "1. Resolve each `review` row by hand, then re-run this command.",
         "2. Move `migrate` rows into their suggested target and fix intra-project links.",
         "3. Import `import` rows as immutable history: do not rewrite their content.",
-        "4. Record completed moves in a change record (`cabbage new feature adopt-existing-docs`).",
+        "4. Record completed moves in a change record (`cabbage new change adopt-existing-docs`).",
         "5. Verify the current-state site (`cabbage docs build`), then enable CI gates.",
         "",
         f"The standard current-state tree is `{docs_name}/`; see the cabbage-docs skill for the layout.",

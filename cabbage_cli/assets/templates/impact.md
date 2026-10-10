@@ -15,7 +15,9 @@ change_type: {{CHANGE_TYPE}}
 | Area | Impact | Notes |
 |---|---|---|
 | Product | No | |
+| Design | No | |
 | Architecture | No | |
+| RFC | No | |
 | API | No | |
 | Database | No | |
 | Security | No | |

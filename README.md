@@ -34,16 +34,16 @@ Debian / Ubuntu：从 [Releases](https://github.com/devcxl/cabbage/releases) 下
 
 ## 快速开始：小变更
 
-以下适用于**新初始化项目**。普通 `feature / bugfix / refactor` 默认只需一份 `tasks.md`：
+以下适用于**新初始化项目**。普通 `change` 默认只需一份 `tasks.md`：
 目标或问题、改动方案、任务、实际验证结果。
 
 ```bash
 cabbage init
-cabbage new bugfix fix-label
+cabbage new change fix-label
 # 填写 .cabbage/changes/fix-label/tasks.md 的 Goal 和 Design
-cabbage gate fix-label implementation
+cabbage gate fix-label tasks
 # 复现失败 → 最小修复 → 回归测试；完成 Tasks 并填写 Verification 实际结果
-cabbage verify fix-label implementation
+cabbage verify fix-label tasks
 cabbage gate fix-label merge
 # 提交后，在 PR/CI 中检查（替换为实际基线分支）
 cabbage ci --base origin/main
@@ -59,19 +59,21 @@ cabbage archive fix-label
 在实现前声明实际影响。例如下面是一个独立的 API 变更：
 
 ```bash
-cabbage new feature update-api
+cabbage new change update-api
 cabbage impact update-api --set api=true
 # 填写 tasks.md 的目标与方案，以及新生成的 api-design.md
 cabbage verify update-api api
-cabbage gate update-api implementation
+cabbage gate update-api tasks
 # 完成代码与测试，填写 tasks.md 实际结果后
-cabbage verify update-api implementation
+cabbage verify update-api tasks
 cabbage gate update-api merge
 cabbage sync update-api
 ```
 
 | 影响标记 | 增加的文档 | 实现前阶段 |
 | --- | --- | --- |
+| `design=true` | `tech-spec.md` | `design` |
+| `rfc=true` | `rfc.md` | `rfc` |
 | `architecture=true` | `adr.md` | `adr` |
 | `api=true` | `api-design.md` | `api` |
 | `database=true` | `database-design.md` | `database` |
@@ -79,11 +81,14 @@ cabbage sync update-api
 | `deployment=true` | `release-plan.md` | `release` |
 
 标记可组合。`deployment=true` 表示需要专项部署/回滚方案的发布，不是每次普通合并。
+数据迁移 = `database` + `deployment`；跨团队方案评审 = `rfc`（完整技术方案按需加 `design`）。
 专项方案在实现前验证，实际测试和发布验证结果记在 `tasks.md`。
-风险由人或 Agent 声明，CLI 不会从代码自动推断。高风险影响的 CI 当前文档目录规则继续生效；
+风险由人或 Agent 声明，CLI 不会从代码自动推断。`operations` 与 `performance`
+不新增专项阶段，仅在 CI 中要求对应当前文档目录有实际改动。
+高风险影响的 CI 当前文档目录规则继续生效；
 已有当前文档失真时仍应修正，不应为凑文件数保留错误信息。
 
-`architecture / migration / integration / hotfix / incident` 的独立专项工作流继续保留。
+新项目仅 `incident` 保留独立专项工作流；旧项目的既有工作流继续按原样使用。
 
 ## 既有项目兼容
 
@@ -98,14 +103,15 @@ cabbage sync update-api
 ## 能力与边界
 
 - `verify`：检查结构、占位符、清单、链接和 Mermaid 围栏，记录内容指纹。
-- `status / next / gate`：显示状态、就绪阶段与门禁；验证后内容或依赖变化会使阶段 `stale`。
+- `status / next / gate`：显示状态、就绪阶段与门禁；验证后内容或依赖变化会使阶段 `stale`；
+  `status` 会标出已完成全部验证、可归档的变更。
 - `validate`：检查草稿结构与链接，不要求所有任务已经完成。
 - `sync`：复制有映射的文档，不做语义合并，也不检查阶段验证状态；发布前先通过 `gate merge`。
 - `archive`：先检查门禁，再同步和移动到 `.cabbage/archive/`；不检查 Git 合并状态。
 - `ci`：检查提交差异中的变更绑定、门禁及适用的当前文档规则；不自行构建站点。
 - `adopt`：盘点已有文档，确认迁移建议后再用 `--apply`。
 - `docs dev / build`：预览和构建 VitePress 站点。
-- `tasks --export-dag`：可选的任务派发数据导出，不执行任务，不是小变更的前置要求。
+- `tasks`：查看任务清单的就绪与阻塞状态；任务派发由编排侧（Agent/插件）负责。
 
 内容指纹不是身份签名，也不证明文档语义正确或记录不可篡改。
 应在托管平台配置必要的分支保护、人工审批和策略文件所有权。

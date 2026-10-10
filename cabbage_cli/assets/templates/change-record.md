@@ -10,7 +10,7 @@ change_type: {{CHANGE_TYPE}}
 
 # Design
 
-<!-- CABBAGE: Describe the minimal change and risks. Before implementation, declare architecture/API/database/security/high-risk deployment impacts with cabbage impact. -->
+<!-- CABBAGE: Describe the minimal change and risks. Before implementation, declare architecture/API/database/security/design/RFC/high-risk deployment impacts with cabbage impact. -->
 
 # Tasks
 

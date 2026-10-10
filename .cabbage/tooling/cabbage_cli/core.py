@@ -102,7 +102,9 @@ def change_spec(root: Path, change_id: str) -> dict:
 def workflow(root: Path, change_type: str) -> tuple[dict, Path]:
     p = root / CABBAGE_DIR / "workflows" / f"{change_type}.yaml"
     if not p.exists():
-        raise CabbageError(f"unknown change type: {change_type}")
+        available = sorted(x.stem for x in p.parent.glob("*.yaml")) if p.parent.exists() else []
+        hint = f"; available: {', '.join(available)}" if available else ""
+        raise CabbageError(f"unknown change type: {change_type}{hint}")
     return load_yaml(p), p
 
 def state_path(root: Path, change_id: str) -> Path:
@@ -403,14 +405,18 @@ def gate(root: Path, change_id: str, target: str) -> list[str]:
     spec=change_spec(root,change_id); wf,_=workflow(root,spec["type"])
     statuses=stage_statuses(root,change_id)
     order=[x["id"] for x in statuses]
-    if target == "implementation":
-        if "implementation" not in order: return ["workflow has no implementation stage"]
-        required=statuses[:order.index("implementation")]
-    elif target in {"merge","archive"}:
+    if target in {"merge","archive"}:
         required=statuses
+    elif target in order:
+        # 阶段 id 作为目标：校验其全部前置阶段（条件未启用的阶段为 skipped，不阻塞）
+        required=statuses[:order.index(target)]
     else:
-        return [f"unknown gate target: {target}"]
+        return [f"unknown gate target: {target} (use a stage id, merge, or archive)"]
     return [f"{x['id']} is {x['status']}" for x in required if x["status"] not in {"done","skipped"}]
+
+def ready_to_archive(statuses: list[dict]) -> bool:
+    """merge/archive 判定：全部门禁阶段均为 done/skipped（status 提示与门禁共用同一语义）。"""
+    return bool(statuses) and not [x for x in statuses if x["status"] not in {"done","skipped"}]
 
 def git_changed_files(root: Path, base: str) -> list[str]:
     proc=subprocess.run(["git","diff","--name-only",f"{base}...HEAD"],cwd=root,text=True,capture_output=True)
@@ -573,30 +579,6 @@ def parse_tasks_markdown(text: str) -> dict:
         grp = t.get("parallel_group", "Default")
         parallel_groups.setdefault(grp, []).append(t)
 
-    # 5. Build subagent dispatch plan for ready tasks.
-    # A plain checklist declares no dependencies, so there is nothing to
-    # dispatch; only structured task sections produce a plan.
-    dispatch_plan = []
-    if structured:
-        for grp, grp_tasks in parallel_groups.items():
-            ready_tasks = [t for t in grp_tasks if t["is_ready"]]
-            if ready_tasks:
-                dispatch_plan.append({
-                    "parallel_group": grp,
-                    "tasks": [
-                        {
-                            "agent": "coder",
-                            "task_id": t["task_id"],
-                            "title": t["title"],
-                            "builds": t["builds"],
-                            "verification": t["verification"],
-                            "sop": t.get("sop", []),
-                            "prompt": f"Execute {t['task_id']} ({t['title']}): {t['builds']} following Task SOP. Verification: {t['verification']}."
-                        }
-                        for t in ready_tasks
-                    ]
-                })
-
     total_tasks = len(tasks)
     completed_count = sum(1 for t in tasks if t["is_completed"])
     ready_count = sum(1 for t in tasks if t["is_ready"])
@@ -611,7 +593,6 @@ def parse_tasks_markdown(text: str) -> dict:
         "blocked_tasks": blocked_count,
         "tasks": tasks,
         "parallel_groups": parallel_groups,
-        "subagent_dispatch_plan": dispatch_plan,
     }
 
 def get_change_tasks_dag(root: Path, change_id: str) -> dict:

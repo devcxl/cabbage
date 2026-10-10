@@ -288,7 +288,7 @@ class RepositoryContractsTest(unittest.TestCase):
                     artifact = workspace / stage['artifact']
                     text = re.sub(r'<!--\s*CABBAGE:.*?-->', 'Executed regression with passing result.', artifact.read_text(), flags=re.S)
                     artifact.write_text(text.replace('- [ ]', '- [x]'))
-                    if args[2] == 'implementation':
+                    if args[2] == 'tasks':
                         (root / 'app.py').write_text('print("fixed")\n')
                 if args[0] == 'ci':
                     git('add', '.')
@@ -312,6 +312,8 @@ class RepositoryContractsTest(unittest.TestCase):
         steps = {s['name']: s for s in template['jobs']['validate-and-test']['steps']}
         self.assertIn('[ -f requirements.txt ]', steps['Install Python dependencies']['run'])
         self.assertIn('[ -d tests ]', steps['Run Test Suite']['run'])
+        self.assertIn('::warning', steps['Run Test Suite']['run'],
+                      'a skipped test stage must surface a visible CI annotation')
         for name in ('Validate Cabbage Changes', 'Validate PR Workflow & Doc Binding'):
             with self.subTest(step=name):
                 script = steps[name]['run']
