@@ -312,6 +312,8 @@ class RepositoryContractsTest(unittest.TestCase):
         steps = {s['name']: s for s in template['jobs']['validate-and-test']['steps']}
         self.assertIn('[ -f requirements.txt ]', steps['Install Python dependencies']['run'])
         self.assertIn('[ -d tests ]', steps['Run Test Suite']['run'])
+        self.assertIn('::warning', steps['Run Test Suite']['run'],
+                      'a skipped test stage must surface a visible CI annotation')
         for name in ('Validate Cabbage Changes', 'Validate PR Workflow & Doc Binding'):
             with self.subTest(step=name):
                 script = steps[name]['run']

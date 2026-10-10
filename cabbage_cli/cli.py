@@ -119,11 +119,20 @@ def cmd_status(a):
         dirs=changes_root(root); rows=[]
         for p in sorted(dirs.iterdir() if dirs.exists() else []):
             if p.is_dir() and (p/"change.yaml").exists():
-                st=stage_statuses(root,p.name); rows.append({"change":p.name,"done":sum(x['status']=='done' for x in st),"total":sum(x['status']!='skipped' for x in st),"stale":sum(x['status']=='stale' for x in st)})
+                st=stage_statuses(root,p.name)
+                done=sum(x['status']=='done' for x in st)
+                total=sum(x['status']!='skipped' for x in st)
+                stale=sum(x['status']=='stale' for x in st)
+                rows.append({"change":p.name,"done":done,"total":total,"stale":stale,
+                             "ready_to_archive":total>0 and done==total and stale==0})
         if a.json: emit(rows)
         elif not rows: print("no active changes")
         else:
             for r in rows: print(f"{r['change']:<20} {r['done']}/{r['total']} done  {r['stale']} stale")
+            ready=[r["change"] for r in rows if r["ready_to_archive"]]
+            if ready:
+                print(f"\n{len(ready)} change(s) fully verified and ready to archive.")
+                print("After confirming the merge, run: cabbage archive <change-id>")
 
 def cmd_next(a):
     root=project_root(); sts=stage_statuses(root,a.change); status={x['id']:x['status'] for x in sts}; spec=change_spec(root,a.change); wf,_=workflow(root,spec['type']); sm=stage_map(wf)

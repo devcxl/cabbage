@@ -80,7 +80,9 @@ cabbage sync update-api
 
 标记可组合。`deployment=true` 表示需要专项部署/回滚方案的发布，不是每次普通合并。
 专项方案在实现前验证，实际测试和发布验证结果记在 `tasks.md`。
-风险由人或 Agent 声明，CLI 不会从代码自动推断。高风险影响的 CI 当前文档目录规则继续生效；
+风险由人或 Agent 声明，CLI 不会从代码自动推断。`operations` 与 `performance`
+不新增专项阶段，仅在 CI 中要求对应当前文档目录有实际改动。
+高风险影响的 CI 当前文档目录规则继续生效；
 已有当前文档失真时仍应修正，不应为凑文件数保留错误信息。
 
 `architecture / migration / integration / hotfix / incident` 的独立专项工作流继续保留。
@@ -98,7 +100,8 @@ cabbage sync update-api
 ## 能力与边界
 
 - `verify`：检查结构、占位符、清单、链接和 Mermaid 围栏，记录内容指纹。
-- `status / next / gate`：显示状态、就绪阶段与门禁；验证后内容或依赖变化会使阶段 `stale`。
+- `status / next / gate`：显示状态、就绪阶段与门禁；验证后内容或依赖变化会使阶段 `stale`；
+  `status` 会标出已完成全部验证、可归档的变更。
 - `validate`：检查草稿结构与链接，不要求所有任务已经完成。
 - `sync`：复制有映射的文档，不做语义合并，也不检查阶段验证状态；发布前先通过 `gate merge`。
 - `archive`：先检查门禁，再同步和移动到 `.cabbage/archive/`；不检查 Git 合并状态。

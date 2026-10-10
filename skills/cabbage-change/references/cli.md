@@ -70,7 +70,8 @@ cabbage new feature user-oauth-login
 
 #### `cabbage status [change-id] [--json]`
 Display the progress and verification status of a specific change or all active changes.
-Without `--json` it prints human-readable text; `--json` keeps the structured shape unchanged.
+The change list marks fully verified changes as ready to archive (`ready_to_archive` field in
+`--json`); confirm the merge before running `cabbage archive`.
 - **Stage Statuses**: `pending` / `done` / `stale` / `skipped`; definitions and the state machine are in `lifecycle.md`.
 
 ```bash
