@@ -88,6 +88,7 @@ cabbage docs build
 ## 同族 skill
 
 - `cabbage`：总入口，选路与组合编排。
+- `cabbage-change`：变更流程、影响标记、门禁与验证。
 - `cabbage-research`：技术选型与方案调研。
 - `cabbage-decision`：ADR/RFC 内容标准。
 - `cabbage-incident`：事故记录与复盘。

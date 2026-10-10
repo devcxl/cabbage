@@ -6,8 +6,7 @@
 | --- | --- |
 | `validate` | `change` / `cabbage_stage` 元数据、工作流必需标题、文件存在、本地链接与锚点、Mermaid 围栏及图表类型 |
 | `verify` | 上述检查，以及前置阶段完成、占位符清除、任务清单无未勾选项；随后记录内容指纹 |
-| `gate implementation` | 工作流中排列在 `implementation` 之前的已启用阶段均完成 |
-| `gate merge` / `gate archive` | 所有已启用阶段完成，内容指纹仍匹配 |
+| `gate` | 实现门禁与合并/归档门禁的判定条件见 [状态、门禁与归档](lifecycle.md) |
 | `ci --base <ref>` | `<ref>...HEAD` 中的代码变更绑定、改动中的活动变更校验、合并门禁和适用的当前文档路径 |
 
 `validate` 允许尚未填写完的模板和未完成清单，不等同于 `verify`。

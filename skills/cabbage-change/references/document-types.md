@@ -39,6 +39,9 @@
 模板继续保留。实际必需标题取自项目工作流的 `required_headings`，不是一份全局标题清单。
 旧项目默认流程不随 CLI 升级改变。
 
+自定义工作流中某个阶段可省略 `template`；此时回退到通用 `generic.md`，它不预设该阶段的
+必需标题，必需标题仍由工作流的 `required_headings` 决定。
+
 ## 可选 DAG
 
 普通 `# Tasks` 下的 `- [ ]` 清单是默认形式，不需要 DAG 或 Mermaid 图。
