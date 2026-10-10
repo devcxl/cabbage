@@ -166,13 +166,12 @@ def new_change(root: Path, change_type: str, change_id: str):
     if d.exists(): raise CabbageError(f"change already exists: {change_id}")
     d.mkdir(parents=True)
     spec={"id":change_id,"type":change_type,"status":"active","impact":{k:False for k in cfg.get("impact_fields",[])}}
-    # sensible defaults
-    spec["impact"]["testing"]=True
+    # Defaults declare only impacts the workflow can produce evidence for; the rest stay false for explicit opt-in.
+    if change_type!="incident": spec["impact"]["testing"]=True
     if change_type=="feature": spec["impact"]["product"]=True
     if change_type=="architecture": spec["impact"]["architecture"]=True
     if change_type in {"migration"}: spec["impact"]["database"]=True; spec["impact"]["deployment"]=True
     if change_type=="integration": spec["impact"]["api"]=True
-    if change_type=="hotfix": spec["impact"]["operations"]=True
     dump_yaml(d/"change.yaml",spec)
     ensure_artifacts(root,change_id)
 

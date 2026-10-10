@@ -160,6 +160,52 @@ class LightweightWorkflowTest(unittest.TestCase):
             self.assertTrue(any('product=true' in e for e in errors))
             self.assertTrue(any('testing=true' in e for e in errors))
 
+    def test_new_change_defaults_only_claim_impacts_the_workflow_can_back(self):
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            init_project(root, vendor_cli=False)
+            new_change(root, 'incident', 'incident-change')
+            incident = load_yaml(root / '.cabbage/changes/incident-change/change.yaml')
+            self.assertFalse(incident['impact']['testing'])
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            init_project(root, vendor_cli=False)
+            new_change(root, 'hotfix', 'hotfix-change')
+            hotfix = load_yaml(root / '.cabbage/changes/hotfix-change/change.yaml')
+            self.assertFalse(hotfix['impact']['operations'])
+            self.assertTrue(hotfix['impact']['testing'])
+
+    def test_incident_and_hotfix_defaults_do_not_block_ci(self):
+        from unittest.mock import patch
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            init_project(root, vendor_cli=False)
+            new_change(root, 'incident', 'outage')
+            for stage in stage_statuses(root, 'outage'):
+                complete(root / '.cabbage/changes/outage' / stage['artifact'])
+                verify_stage(root, 'outage', stage['id'])
+            with patch('cabbage_cli.core.git_changed_files', return_value=['app.py', '.cabbage/changes/outage/tasks.md']):
+                errors = ci_check(root, 'main')
+            self.assertFalse(any('testing=true' in e for e in errors), errors)
+            self.assertFalse(any('operations=true' in e for e in errors), errors)
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            init_project(root, vendor_cli=False)
+            new_change(root, 'hotfix', 'regression')
+            for stage in stage_statuses(root, 'regression'):
+                complete(root / '.cabbage/changes/regression' / stage['artifact'])
+                verify_stage(root, 'regression', stage['id'])
+            with patch('cabbage_cli.core.git_changed_files', return_value=['app.py', '.cabbage/changes/regression/tasks.md']):
+                errors = ci_check(root, 'main')
+            # The testing rule still applies to hotfix and the tests stage can satisfy it.
+            self.assertTrue(any('testing=true' in e for e in errors))
+            self.assertFalse(any('operations=true' in e for e in errors), errors)
+            with patch('cabbage_cli.core.git_changed_files',
+                       return_value=['app.py', '.cabbage/changes/regression/tasks.md', 'docs/08-testing/regression.md']):
+                errors = ci_check(root, 'main')
+            self.assertFalse(any('testing=true' in e for e in errors), errors)
+            self.assertFalse(any('operations=true' in e for e in errors), errors)
+
     def test_refresh_does_not_migrate_existing_workflows_or_state(self):
         from support import init_legacy_project
         with TemporaryDirectory() as td:
