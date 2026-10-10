@@ -1,0 +1,13 @@
+id: fix-simplification-findings
+type: refactor
+status: active
+impact:
+  product: false
+  architecture: false
+  api: false
+  database: false
+  security: false
+  testing: true
+  deployment: true
+  operations: false
+  performance: false
