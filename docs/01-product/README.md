@@ -30,7 +30,7 @@ Cabbage 通过仓库本地 Markdown、验证状态和 CI 保留变更依据，�
 | 高风险发布 | 部署与回滚方案 | `release` |
 
 通过 `impact --set` 激活，相关方案须在实现前验证。实际执行结果记入 `tasks.md`。
-高风险影响的当前文档目录规则仍生效；`operations / data / performance` 的既有目录规则也保留。
+高风险影响的当前文档目录规则仍生效；`operations / performance` 的既有目录规则也保留。
 风险标记由人或 Agent 声明，工具不自动推断，也不证明方案正确。
 
 ## 兼容性

@@ -4,7 +4,7 @@ from importlib import resources
 from pathlib import Path
 import re
 from .core import (CabbageError, dump_yaml, load_config, load_yaml, change_dir, now_iso,
-                   project_root, workflow, condition_enabled, CABBAGE_DIR)
+                   project_root, workflow, condition_enabled, write_text_atomic, CABBAGE_DIR)
 
 IMPACT_FIELDS=["product","architecture","api","database","security","testing","deployment","operations","performance"]
 
@@ -92,7 +92,7 @@ def init_project(root: Path, force: bool=False, vendor_cli: bool=True):
       },
       "docs":{"dir":"docs"}
     }
-    if force or not (d/"config.yaml").exists(): dump_yaml(d/"config.yaml",cfg)
+    dump_yaml(d/"config.yaml",cfg)
     copy_asset_tree("workflows",d/"workflows",overwrite=force)
     (d/"changes").mkdir(exist_ok=True); (d/"archive").mkdir(exist_ok=True)
     copy_asset_tree("docs-site",root/"docs",overwrite=False)
@@ -144,7 +144,7 @@ def sync_impact_document(root: Path, change_id: str):
         val="Yes" if spec.get("impact",{}).get(key,False) else "No"
         pattern=rf"^(\|\s*{re.escape(label)}\s*\|)\s*(Yes|No)\s*(\|.*)$"
         text=re.sub(pattern,rf"\1 {val} \3",text,flags=re.M|re.I)
-    p.write_text(text,encoding="utf-8")
+    write_text_atomic(p,text,encoding="utf-8")
 
 def ensure_artifacts(root: Path, change_id: str):
     spec=load_yaml(change_dir(root,change_id)/"change.yaml")
@@ -195,18 +195,15 @@ def iter_adoption_docs(root: Path):
 
 def classify_adoption_doc(rel: Path) -> tuple[str,str|None,str|None]:
     name_parts=[p.lower() for p in rel.with_suffix("").parts]
-    for category,hints in ADOPTION_CATEGORY_RULES:
-        for hint in hints:
-            if hint in name_parts:
-                action="import" if category in ADOPTION_HISTORICAL else "migrate"
-                return action,category,ADOPTION_TARGET_BY_CATEGORY[category]
-    lowered="/".join(name_parts)
-    for category,hints in ADOPTION_CATEGORY_RULES:
-        for hint in hints:
-            if re.search(rf"(^|[-_/]){re.escape(hint)}([-_/]|$)",lowered):
-                action="import" if category in ADOPTION_HISTORICAL else "migrate"
-                return action,category,ADOPTION_TARGET_BY_CATEGORY[category]
-    return "review",None,None
+    category=next((c for c,hints in ADOPTION_CATEGORY_RULES if any(h in name_parts for h in hints)),None)
+    if category is None:
+        lowered="/".join(name_parts)
+        category=next((c for c,hints in ADOPTION_CATEGORY_RULES
+                       if any(re.search(rf"(^|[-_/]){re.escape(h)}([-_/]|$)",lowered) for h in hints)),None)
+    if category is None:
+        return "review",None,None
+    action="import" if category in ADOPTION_HISTORICAL else "migrate"
+    return action,category,ADOPTION_TARGET_BY_CATEGORY[category]
 
 def conforming_area(rel: Path, docs_name: str|None=None) -> str|None:
     parts=rel.parts

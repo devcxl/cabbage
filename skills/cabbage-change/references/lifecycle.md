@@ -69,11 +69,9 @@ To prevent documentation from rotting or going out of sync with code and design:
 
 Specifications produced during a change are synchronized into persistent, long-lived documentation:
 
-- **Sync Targets**:
-  - `api-design.md` -> `docs/05-api/`
-  - `database-design.md` -> `docs/04-domain/`
-  - `adr.md` -> `docs/03-architecture/adr/`
-  - `rfc.md` -> `docs/03-architecture/rfc/`
+- **Sync Targets**: defined by the CLI and the project's `docs.mapping` override. The
+  `cabbage-docs` skill's directory guide keeps the default table; it is not restated
+  here to avoid drift.
 - **When to Sync**:
   - Before pull request merge (`cabbage sync <change>`)
   - Automatically executed during `cabbage archive <change>`

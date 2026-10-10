@@ -3,7 +3,10 @@ import argparse, json, shutil, subprocess, sys
 from datetime import datetime
 from pathlib import Path
 from . import __version__
-from .core import *
+from .core import (CabbageError, archive_root, change_dir, change_spec, changes_root,
+                   ci_check, condition_enabled, dump_yaml, gate, get_change_tasks_dag,
+                   load_config, load_yaml, project_root, stage_map, stage_statuses,
+                   sync_change_to_docs, validate_change, verify_stage, workflow)
 from .scaffold import init_project, new_change, ensure_artifacts, adopt_project, discard_change
 
 def emit(data, as_json=False):
@@ -19,7 +22,7 @@ def cmd_init(a):
     print("existing docs to onboard? run: cabbage adopt")
 
 def cmd_adopt(a):
-    root=project_root(); data=adopt_project(root, apply=getattr(a, "apply", False))
+    root=project_root(); data=adopt_project(root, apply=a.apply)
     if a.json: emit(data,True); return 0
     if data.get("applied"):
         print(f"migrated {len(data['applied'])} document(s):")

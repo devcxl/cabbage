@@ -1,4 +1,5 @@
-"""Frozen old-project workflow for compatibility regressions."""
+"""Shared test helpers: frozen legacy workflow setup and artifact completion."""
+import re
 from pathlib import Path
 import shutil
 
@@ -11,3 +12,10 @@ def init_legacy_project(root):
         Path(__file__).parent / 'fixtures/legacy-feature.yaml',
         root / '.cabbage/workflows/feature.yaml',
     )
+
+
+def fill_template(path):
+    """Replace CABBAGE prompts with neutral content so a stage can be verified."""
+    text = path.read_text(encoding="utf-8")
+    text = re.sub(r"<!--\s*CABBAGE:.*?-->", "Completed content.", text, flags=re.S)
+    path.write_text(text, encoding="utf-8")

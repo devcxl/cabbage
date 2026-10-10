@@ -39,7 +39,7 @@ flowchart TD
 
 每个活跃变更位于 `.cabbage/changes/<change-id>/`：
 
-- `change.yaml`：变更 ID、类型、状态和十项影响字段。
+- `change.yaml`：变更 ID、类型、状态和影响字段。
 - Markdown 产物：由所选 workflow 的阶段定义决定。
 - `state.json`：已完成阶段的签名和完成时间，由 CLI 写入。
 

@@ -551,7 +551,6 @@ def parse_tasks_markdown(text: str) -> dict:
 
     # 3. Calculate status, topological readiness
     completed_ids = {t["task_id"] for t in tasks if t["is_completed"]}
-    completed_ids.update({"None", "none", "Preparation", "preparation"})
 
     for t in tasks:
         if t["is_completed"]:

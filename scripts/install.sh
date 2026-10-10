@@ -46,7 +46,7 @@ if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/../pyproject.toml" ] && [ -d "$SCRI
 else
   TMP_DIR="$(mktemp -d)"
   CLEANUP_TMP=1
-  echo "==> Downloading latest release from $REPO_URL..."
+  echo "==> Downloading source from $REPO_URL (default branch)..."
   git clone --depth 1 "$REPO_URL" "$TMP_DIR"
   SOURCE_DIR="$TMP_DIR"
 fi

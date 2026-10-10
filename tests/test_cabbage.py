@@ -1,10 +1,9 @@
 from pathlib import Path
-import re
 from tempfile import TemporaryDirectory
 import unittest
 
 from cabbage_cli.scaffold import new_change
-from support import init_legacy_project as init_project
+from support import fill_template, init_legacy_project as init_project
 from cabbage_cli.core import (
     CabbageError,
     verify_stage,
@@ -13,12 +12,6 @@ from cabbage_cli.core import (
     stage_statuses,
     validate_change,
 )
-
-
-def fill_template(path: Path) -> None:
-    text = path.read_text(encoding="utf-8")
-    text = re.sub(r"<!--\s*CABBAGE:.*?-->", "Completed content.", text, flags=re.S)
-    path.write_text(text, encoding="utf-8")
 
 
 class CabbageWorkflowTest(unittest.TestCase):

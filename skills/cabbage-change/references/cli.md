@@ -44,7 +44,7 @@ cabbage init
 #### `cabbage adopt [--apply] [--json]`
 Inventory and optionally migrate existing project documentation outside the `docs/` directory.
 - **Flags**:
-  - `--apply`: Automatically apply suggested moves (`migrate` and `import`) using Git.
+  - `--apply`: Automatically apply suggested moves (`migrate` and `import`) by moving files on disk.
   - `--json`: Output inventory JSON.
 - **Reference**: See `references/adoption.md` for the complete 7-phase adoption guide.
 
@@ -90,7 +90,7 @@ cabbage next user-oauth-login
 
 #### `cabbage impact <change-id> [--set field=true|false] [--json]`
 Inspect or mutate the impact analysis matrix of a change.
-- **Available Fields**: `product`, `architecture`, `api`, `database`, `security`, `testing`, `deployment`, `operations`, `data`, `performance`.
+- **Available Fields**: the project's `impact_fields`, which new projects default to `product`, `architecture`, `api`, `database`, `security`, `testing`, `deployment`, `operations`, `performance`.
 - **Behavior**: Updates `change.yaml`, generates enabled conditional artifacts, and updates an existing impact table. Affected verified stages derive `stale` status from changed signatures; unrelated stages need not become stale.
 
 ```bash
