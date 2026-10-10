@@ -70,11 +70,8 @@ cabbage new feature user-oauth-login
 
 #### `cabbage status [change-id] [--json]`
 Display the progress and verification status of a specific change or all active changes.
-- **Stage Statuses**:
-  - `pending`: Artifact template created but not yet verified.
-  - `done`: Verified with valid SHA-256 signature and all dependencies satisfied.
-  - `stale`: Upstream dependency, workflow definition, or artifact was modified after verification.
-  - `skipped`: Deactivated by current impact matrix settings.
+Without `--json` it prints human-readable text; `--json` keeps the structured shape unchanged.
+- **Stage Statuses**: `pending` / `done` / `stale` / `skipped`; definitions and the state machine are in `lifecycle.md`.
 
 ```bash
 cabbage status user-oauth-login
@@ -83,6 +80,7 @@ cabbage status --json
 
 #### `cabbage next <change-id> [--json]`
 Inspect ready (unblocked) stages and blocked stages based on workflow dependency graph.
+Without `--json` it prints human-readable text; `--json` keeps the structured shape unchanged.
 
 ```bash
 cabbage next user-oauth-login
@@ -92,6 +90,7 @@ cabbage next user-oauth-login
 Inspect or mutate the impact analysis matrix of a change.
 - **Available Fields**: the project's `impact_fields`, which new projects default to `product`, `architecture`, `api`, `database`, `security`, `testing`, `deployment`, `operations`, `performance`.
 - **Behavior**: Updates `change.yaml`, generates enabled conditional artifacts, and updates an existing impact table. Affected verified stages derive `stale` status from changed signatures; unrelated stages need not become stale.
+  Without `--json` it prints one `field` and `Yes`/`No` line per impact field; `--json` keeps the structured shape unchanged.
 
 ```bash
 cabbage impact user-oauth-login --set api=true --set database=true
@@ -127,14 +126,7 @@ cabbage discard user-oauth-login
 
 #### `cabbage verify <change-id> <stage>`
 Verify a single stage artifact, check content completeness, ensure no placeholders or unchecked tasks, and record the cryptographic signature in `state.json`.
-- **Checks**:
-  - All upstream dependencies are in `done` state.
-  - Artifact file exists and frontmatter matches change ID and stage.
-  - Required section headings are present.
-  - No legacy placeholders or `TODO` / `TBD` / `FIXME` / `CABBAGE` markers remain.
-  - No unchecked tasks (`- [ ]`) remain in task-oriented stages.
-  - Markdown local links and anchor references resolve.
-  - Mermaid diagram syntax fences are closed.
+- **Checks**: upstream dependencies are `done`, artifact/frontmatter/headings are valid, no placeholders or unchecked tasks remain, local links and Mermaid fences resolve. See `validation.md` for the full automatic-check scope.
 
 ```bash
 # Use stage IDs returned by `next`, not artifact filenames.
@@ -153,10 +145,7 @@ cabbage validate --all
 
 #### `cabbage gate <change-id> <target> [--json]`
 Evaluate readiness for specific milestones in the software development lifecycle.
-- **Targets**:
-  - `implementation`: Requires enabled stages listed before `implementation` in the project workflow to be verified. It does not verify the implementation checklist in advance.
-  - `merge`: Enforces that all active workflow stages (testing, release, documentation) are verified before merging PR.
-  - `archive`: Like `merge`, requires every enabled stage to be verified. Git merge status is not checked.
+- **Targets**: `implementation` covers the enabled stages before it; `merge` and `archive` require every enabled stage and do not inspect Git merge status. The full gate table is in `lifecycle.md`.
 
 ```bash
 cabbage gate user-oauth-login implementation
