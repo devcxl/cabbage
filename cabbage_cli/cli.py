@@ -9,11 +9,9 @@ from .core import (CabbageError, archive_root, change_dir, change_spec, changes_
                    sync_change_to_docs, validate_change, verify_stage, workflow)
 from .scaffold import init_project, new_change, ensure_artifacts, adopt_project, discard_change
 
-def emit(data, as_json=False):
-    if as_json: print(json.dumps(data,ensure_ascii=False,indent=2))
-    elif isinstance(data,str): print(data)
-    else:
-        for x in data: print(x)
+def emit(data):
+    # Every caller only wants JSON here; human-readable text is printed explicitly.
+    print(json.dumps(data,ensure_ascii=False,indent=2))
 
 def cmd_init(a):
     root=Path.cwd().resolve(); init_project(root,a.force,not a.no_vendor_cli)
@@ -23,7 +21,7 @@ def cmd_init(a):
 
 def cmd_adopt(a):
     root=project_root(); data=adopt_project(root, apply=a.apply)
-    if a.json: emit(data,True); return 0
+    if a.json: emit(data); return 0
     if data.get("applied"):
         print(f"migrated {len(data['applied'])} document(s):")
         for item in data["applied"]:
@@ -91,7 +89,7 @@ def cmd_doctor(a):
 
     all_ok = results["python"]["ok"] and results["pyyaml"]["ok"] and results["git"]["ok"]
     if a.json:
-        emit({"ok": all_ok, "checks": results}, True)
+        emit({"ok": all_ok, "checks": results})
     else:
         print("Cabbage Doctor Diagnosis:")
         for name, info in results.items():
@@ -112,7 +110,7 @@ def cmd_status(a):
     root=project_root()
     if a.change:
         items=stage_statuses(root,a.change)
-        if a.json: emit({"change":a.change,"stages":items},True)
+        if a.json: emit({"change":a.change,"stages":items})
         else:
             for x in items: print(f"{x['status']:7} {x['id']:16} {x.get('artifact') or ''}")
     else:
@@ -120,7 +118,10 @@ def cmd_status(a):
         for p in sorted(dirs.iterdir() if dirs.exists() else []):
             if p.is_dir() and (p/"change.yaml").exists():
                 st=stage_statuses(root,p.name); rows.append({"change":p.name,"done":sum(x['status']=='done' for x in st),"total":sum(x['status']!='skipped' for x in st),"stale":sum(x['status']=='stale' for x in st)})
-        emit(rows,a.json)
+        if a.json: emit(rows)
+        elif not rows: print("no active changes")
+        else:
+            for r in rows: print(f"{r['change']:<20} {r['done']}/{r['total']} done  {r['stale']} stale")
 
 def cmd_next(a):
     root=project_root(); sts=stage_statuses(root,a.change); status={x['id']:x['status'] for x in sts}; spec=change_spec(root,a.change); wf,_=workflow(root,spec['type']); sm=stage_map(wf)
@@ -130,7 +131,13 @@ def cmd_next(a):
         deps=[d for d in sm[x['id']].get('depends_on',[]) if d in sm and condition_enabled(sm[d],spec)]
         if all(status.get(d)=='done' for d in deps): ready.append(x)
     data={"change":a.change,"ready":ready,"blocked":[x for x in sts if x['status'] in {'pending','stale'} and x not in ready]}
-    emit(data,a.json)
+    if a.json: emit(data)
+    else:
+        if data["ready"]:
+            print("ready:"); [print(f"  {x['id']:<16} {x.get('artifact') or ''}") for x in data["ready"]]
+        else: print("no ready stages")
+        if data["blocked"]:
+            print("blocked:"); [print(f"  {x['id']:<16} {x.get('artifact') or ''}") for x in data["blocked"]]
     return 0 if ready or all(x['status'] in {'done','skipped'} for x in sts) else 2
 
 def cmd_impact(a):
@@ -143,7 +150,9 @@ def cmd_impact(a):
         spec.setdefault('impact',{})[k]=v.lower()=='true'
     if a.set:
         dump_yaml(p,spec); ensure_artifacts(root,a.change)
-    emit({"change":a.change,"impact":spec.get('impact',{})},a.json)
+    if a.json: emit({"change":a.change,"impact":spec.get('impact',{})})
+    else:
+        for k,v in spec.get('impact',{}).items(): print(f"  {k:<12} {'Yes' if v else 'No'}")
 
 def cmd_validate(a):
     root=project_root(); errors=[]
@@ -153,7 +162,7 @@ def cmd_validate(a):
     elif a.change: ids=[a.change]
     else: raise CabbageError("provide a change id or --all")
     for cid in ids: errors.extend(f"{cid}: {e}" for e in validate_change(root,cid))
-    if a.json: emit({"ok":not errors,"errors":errors},True)
+    if a.json: emit({"ok":not errors,"errors":errors})
     elif errors:
         print("INVALID"); [print(f"- {e}") for e in errors]
     else: print("VALID")
@@ -164,7 +173,7 @@ def cmd_verify(a):
 
 def cmd_sync(a):
     root=project_root(); synced=sync_change_to_docs(root,a.change)
-    if a.json: emit({"change":a.change,"synced":synced},True)
+    if a.json: emit({"change":a.change,"synced":synced})
     else:
         if synced:
             print(f"synced {len(synced)} document(s) to current-state docs:")
@@ -174,7 +183,7 @@ def cmd_sync(a):
 
 def cmd_gate(a):
     root=project_root(); errors=gate(root,a.change,a.target)
-    if a.json: emit({"ok":not errors,"errors":errors},True)
+    if a.json: emit({"ok":not errors,"errors":errors})
     elif errors:
         print("BLOCKED"); [print(f"- {e}") for e in errors]
     else: print("ALLOWED")
@@ -208,7 +217,7 @@ def cmd_docs(a):
 
 def cmd_tasks(a):
     root=project_root(); data=get_change_tasks_dag(root, a.change)
-    if a.json: emit(data, True); return 0
+    if a.json: emit(data); return 0
     if a.export_dag:
         if not data.get("structured"):
             raise CabbageError(
@@ -242,7 +251,7 @@ def cmd_tasks(a):
             },
             "subagent_dispatch_plan": data["subagent_dispatch_plan"],
         }
-        emit(payload, True)
+        emit(payload)
         return 0
 
     print(f"Task DAG for `{data['change']}`:")
