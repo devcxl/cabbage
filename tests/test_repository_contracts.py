@@ -108,6 +108,16 @@ class RepositoryContractsTest(unittest.TestCase):
         self.assertEqual(set(), referenced - names,
                          'router points at skills that do not exist')
 
+    def test_sibling_skill_lists_are_complete(self):
+        names = {skill.name for skill in skill_dirs()}
+        for skill in skill_dirs():
+            with self.subTest(skill=skill.name):
+                text = (skill / 'SKILL.md').read_text()
+                section = text.split('## 同族 skill')[1]
+                listed = set(re.findall(r'`(cabbage(?:-[a-z]+)?)`', section))
+                self.assertEqual(names - {skill.name}, listed,
+                                 'each skill must list every sibling and not itself')
+
     def test_exit_codes_are_documented_in_one_place(self):
         # Duplicated exit-code lines drift apart; cli.md is the single source.
         owners = []

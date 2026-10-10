@@ -16,8 +16,8 @@ cabbage status <change-id>        # 该变更的各阶段状态
 cabbage next <change-id>          # 当前可做与被阻塞的阶段
 ```
 
-`pending` 未验证；`done` 已验证；`stale` 验证后上游或内容变化，需重新审阅并验证；
-`skipped` 当前影响未启用。以 `next` 输出为准，不要猜测阶段 ID。
+阶段状态（`pending` / `done` / `stale` / `skipped`）的定义见
+[状态、门禁与归档](references/lifecycle.md)。以 `next` 输出为准，不要猜测阶段 ID。
 
 ## 默认路径：一次变更一份记录
 
@@ -126,8 +126,8 @@ cabbage next update-api
 
 ## 约束与排错
 
-- `verify` 检查结构、必需标题、占位符、未勾选清单、本地链接与 Mermaid 围栏，并记录内容指纹；
-  不证明代码正确、文档语义正确或审批身份。
+- `verify` 的检查范围与证据要求见 [验证规则与证据要求](references/validation.md)；
+  它不证明代码正确、文档语义正确或审批身份。
 - 验证后修改上游材料会使依赖它的阶段变为 `stale`，需重新审阅并验证。
 - `sync` 只按映射复制，不检查验证状态、不做语义合并；发布前先通过 `gate merge`。
 - `archive` 不检查 Git 是否已合并，确认合并后再执行。
