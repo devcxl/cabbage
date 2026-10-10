@@ -290,6 +290,58 @@ class RepositoryContractsTest(unittest.TestCase):
                     git('commit', '-m', 'baseline')
                     git('update-ref', 'refs/remotes/origin/main', 'HEAD')
 
+    def test_repo_ci_matches_generated_template(self):
+        repo_ci = (ROOT / '.github/workflows/cabbage.yml').read_bytes()
+        template = (ROOT / 'cabbage_cli/assets/integrations/cabbage.yml').read_bytes()
+        self.assertEqual(template, repo_ci,
+                         'the shipped template and this repository\'s workflow must stay byte-identical')
+
+    def test_generated_ci_guards_optional_project_files(self):
+        template = yaml.safe_load(
+            (ROOT / 'cabbage_cli/assets/integrations/cabbage.yml').read_text())
+        steps = {s['name']: s for s in template['jobs']['validate-and-test']['steps']}
+        self.assertIn('[ -f requirements.txt ]', steps['Install Python dependencies']['run'])
+        self.assertIn('[ -d tests ]', steps['Run Test Suite']['run'])
+        for name in ('Validate Cabbage Changes', 'Validate PR Workflow & Doc Binding'):
+            with self.subTest(step=name):
+                script = steps[name]['run']
+                self.assertIn('PYTHONPATH=".cabbage/tooling', script,
+                              'vendored CLI must take priority')
+                self.assertIn('command -v cabbage', script,
+                              'fall back to an installed CLI instead of failing silently')
+        for name in ('Set up pnpm', 'Set up Node.js', 'Install documentation dependencies',
+                     'Build documentation site', 'Upload Pages artifact'):
+            with self.subTest(step=name):
+                self.assertIn("hashFiles('docs/package.json')", steps[name]['if'])
+        self.assertEqual({'contents': 'read'}, template['permissions'])
+        self.assertEqual('write', template['jobs']['deploy-pages']['permissions']['pages'])
+        self.assertEqual('write', template['jobs']['deploy-pages']['permissions']['id-token'])
+
+    def test_generated_ci_reaches_vendored_cli_in_fresh_project(self):
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            def git(*args):
+                subprocess.run(['git', *args], cwd=root, check=True, capture_output=True)
+            git('init', '-b', 'main')
+            git('config', 'user.name', 'tester')
+            git('config', 'user.email', 'tester@example.com')
+            init = subprocess.run(
+                [sys.executable, '-m', 'cabbage_cli', 'init'],
+                cwd=root, env={**os.environ, 'PYTHONPATH': str(ROOT)},
+                text=True, capture_output=True)
+            self.assertEqual(0, init.returncode, init.stdout + init.stderr)
+            self.assertFalse((root / 'requirements.txt').exists())
+            self.assertFalse((root / 'tests').exists())
+            self.assertTrue((root / '.cabbage/tooling/cabbage_cli').is_dir())
+            git('add', '.')
+            git('commit', '-m', 'baseline')
+            # Mirror the workflow's vendored-CLI path: no requirements.txt, no tests/.
+            result = subprocess.run(
+                [sys.executable, '-m', 'cabbage_cli', 'validate', '--all'],
+                cwd=root, env={**os.environ, 'PYTHONPATH': '.cabbage/tooling'},
+                text=True, capture_output=True)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -12,6 +12,7 @@
 6. 主分支推送成功后上传构建产物，由 `deploy-pages` 部署到 GitHub Pages。
 
 `ci` 命令本身不运行测试或构建，这些由流水线独立步骤执行。
+生成的模板对缺失的 `requirements.txt`、`tests/` 与文档站点做条件跳过，validate/ci 优先使用 vendored CLI，因此新初始化项目可直接运行。
 本仓库根目录的 `cabbage_cli/` 是唯一源码；生成的副本必须与其一致，避免不同入口行为漂移。
 
 ## 文档目录规则
