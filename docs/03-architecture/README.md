@@ -9,7 +9,7 @@ Cabbage 采用单进程、文件系统驱动的 CLI 架构。工作流定义、�
 | `cabbage_cli/cli.py` | 命令解析、输出格式和退出码；连接用户操作与领域函数 |
 | `cabbage_cli/core.py` | 配置读取、阶段计算、签名、Markdown 校验、门禁、Git diff 与 CI 规则 |
 | `cabbage_cli/scaffold.py` | 初始化项目、复制内置资源、创建变更、渲染模板和同步影响矩阵 |
-| `cabbage_cli/assets/workflows/` | 八类变更的阶段、依赖、条件和文档契约 |
+| `cabbage_cli/assets/workflows/` | 内置变更类型的阶段、依赖、条件和文档契约（新项目：`change` / `incident`） |
 | `cabbage_cli/assets/templates/` | 变更产物模板及完成态占位标记 |
 
 ## 运行流程
@@ -62,14 +62,15 @@ flowchart TD
 契约测试会校验每个 skill 的结构与相对链接，确保入口覆盖全部同族 skill，
 并阻止旧单文件入口回归。
 
-## 新项目轻量工作流
+## 新项目变更工作流
 
-内置 `feature / bugfix / refactor` 默认用 `change-record.md` 模板生成单份 `tasks.md`。
-架构、API、数据库、安全和高风险发布阶段按现有影响字段启用，排列在 `implementation` 之前，
-实现阶段依赖所有这些可选阶段；复用原有门禁和失效传播，不引入第二套状态机。
+内置 `change` 默认用 `change-record.md` 模板生成单份 `tasks.md`（阶段 ID `tasks`）。
+`design`、`rfc`、架构、API、数据库、安全和高风险发布阶段按影响字段启用，排列在 `tasks` 之前，
+`tasks` 依赖所有这些可选阶段；`incident` 保留 incident → postmortem → tasks 的专项流程。
+复用原有门禁和失效传播，不引入第二套状态机。
 
 新工作流声明 `record_covers: [product, testing]`，CI 不再为这两项要求重复的当前文档改动。
-其他影响目录规则不变。记录归档后仍保留在历史中，不额外添加实现阶段的同步映射。
+其他影响目录规则不变。记录归档后仍保留在历史中，不额外添加 `tasks` 阶段的同步映射。
 
 新默认仅用于初始化。仓库自身 `.cabbage/workflows/` 及既有项目继续使用原有流程；
 旧流程通过冻结的测试 fixture 验证兼容性，不因测试新默认而丢弃旧行为覆盖。
@@ -94,14 +95,14 @@ flowchart TD
 - 正文不含 `TODO`、`TBD`、`FIXME`、`CABBAGE` 提示或兼容的旧模板占位内容；
 - 本地 Markdown 链接不越出项目根目录且目标存在；
 - Mermaid 代码围栏闭合；
-- `implementation` 清单存在且没有未勾选任务。
+- `checklist` 阶段（新项目为 `tasks`）清单存在且没有未勾选任务。
 
 `sync` 按映射复制已启用且存在的产物，不检查验证状态或合并文档语义；发布前应先通过合并门禁。
 `archive` 会先检查阶段门禁再同步和归档，但不检查 Git 合并状态。
 
 ## 门禁边界
 
-- `implementation` 检查实现阶段之前的所有已启用阶段。
+- 阶段 ID 作为门禁目标时，检查该阶段之前的所有已启用阶段（新项目 `tasks`；旧项目 `implementation` 等用法不变）。
 - `merge` 和 `archive` 检查全部已启用阶段。
 - `ci` 在 Git diff 基础上检查代码变更是否绑定活跃变更，并按影响范围要求更新相应当前状态文档。
 

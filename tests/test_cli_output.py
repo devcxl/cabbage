@@ -92,6 +92,21 @@ class CliOutputTest(unittest.TestCase):
             data = json.loads(self._cli(root, env, 'status', '--json').stdout)
             self.assertFalse(data[0]['ready_to_archive'])
 
+    def test_status_does_not_flag_stale_change(self):
+        with TemporaryDirectory() as td:
+            root, env = self._project(td)
+            self._cli(root, env, 'new', 'change', 'demo')
+            verify = self._verify_single_record(root, env)
+            self.assertEqual(0, verify.returncode, verify.stderr)
+            tasks = root / '.cabbage/changes/demo/tasks.md'
+            tasks.write_text(tasks.read_text() + '\nChanged after verification.\n')
+            result = self._cli(root, env, 'status')
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertNotIn('ready to archive', result.stdout)
+            data = json.loads(self._cli(root, env, 'status', '--json').stdout)
+            self.assertFalse(data[0]['ready_to_archive'])
+            self.assertEqual(1, data[0]['stale'])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -121,25 +121,11 @@ class TestTasksDAG(unittest.TestCase):
         self.assertIn("Task 2", t4["unresolved_deps"])
         self.assertIn("Task 3", t4["unresolved_deps"])
 
-        # Check subagent dispatch plan
-        dispatch = data["subagent_dispatch_plan"]
-        self.assertEqual(len(dispatch), 1) # Phase 2 has ready tasks
-        phase2_plan = dispatch[0]
-        self.assertEqual(phase2_plan["parallel_group"], "Phase 2")
-        self.assertEqual(len(phase2_plan["tasks"]), 2)
-        task_ids = [item["task_id"] for item in phase2_plan["tasks"]]
-        self.assertIn("Task 2", task_ids)
-        self.assertIn("Task 3", task_ids)
-
     def test_plain_checklist_is_not_structured(self):
         data = parse_tasks_markdown(PLAIN_CHECKLIST_MD)
         self.assertEqual(2, data["total_tasks"])
         self.assertFalse(data["structured"])
         self.assertIsNone(data["mermaid"])
-
-    def test_plain_checklist_produces_no_dispatch_plan(self):
-        data = parse_tasks_markdown(PLAIN_CHECKLIST_MD)
-        self.assertEqual([], data["subagent_dispatch_plan"])
 
     def test_structured_tasks_are_flagged_as_structured(self):
         data = parse_tasks_markdown(SAMPLE_DAG_MD)

@@ -19,12 +19,12 @@ git diff --check
 - `test_engine_enhancements.py`：依赖环、Markdown、清单、迁移、文档映射和 Git CI。
 - `test_adopt.py`：文档盘点和分类。
 - `test_templates.py`：模板标题契约。
-- `test_tasks_dag.py`：可选 DAG 解析与派发数据。
+- `test_tasks_dag.py`：结构化任务解析与就绪/阻塞状态。
 - `test_cli_output.py`：`status`、`next`、`impact` 三个命令的文本与 JSON 输出。
 - `test_repository_contracts.py`：副本与主实现一致；`skills/` 下每个 skill 的 frontmatter、
   description 与相对链接有效；入口 `cabbage` 的选路表覆盖全部同族 skill 且不指向不存在的 skill；
   文档中的阶段 ID 真实存在；根目录不再保留旧的单文件说明书。
-- `test_lightweight_workflows.py`：三种轻量流程单份记录、五类风险独立激活、门禁与失效传播、
+- `test_lightweight_workflows.py`：change/incident 单份记录、七类风险独立激活、门禁与失效传播、
   CLI/Git CI/同步/归档链路，以及更新副本不改写旧工作流与签名。
 - `fixtures/legacy-feature.yaml`：冻结升级前的 feature 工作流，旧门禁回归继续使用该契约。
 

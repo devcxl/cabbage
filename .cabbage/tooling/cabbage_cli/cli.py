@@ -5,7 +5,7 @@ from pathlib import Path
 from . import __version__
 from .core import (CabbageError, archive_root, change_dir, change_spec, changes_root,
                    ci_check, condition_enabled, dump_yaml, gate, get_change_tasks_dag,
-                   load_config, load_yaml, project_root, stage_map, stage_statuses,
+                   load_config, load_yaml, project_root, ready_to_archive, stage_map, stage_statuses,
                    sync_change_to_docs, validate_change, verify_stage, workflow)
 from .scaffold import init_project, new_change, ensure_artifacts, adopt_project, discard_change
 
@@ -16,7 +16,7 @@ def emit(data):
 def cmd_init(a):
     root=Path.cwd().resolve(); init_project(root,a.force,not a.no_vendor_cli)
     print("initialized cabbage")
-    print("next: cabbage new feature <change-id>")
+    print("next: cabbage new change <change-id>")
     print("existing docs to onboard? run: cabbage adopt")
 
 def cmd_adopt(a):
@@ -124,7 +124,7 @@ def cmd_status(a):
                 total=sum(x['status']!='skipped' for x in st)
                 stale=sum(x['status']=='stale' for x in st)
                 rows.append({"change":p.name,"done":done,"total":total,"stale":stale,
-                             "ready_to_archive":total>0 and done==total and stale==0})
+                             "ready_to_archive":ready_to_archive(st)})
         if a.json: emit(rows)
         elif not rows: print("no active changes")
         else:

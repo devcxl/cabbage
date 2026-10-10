@@ -50,5 +50,15 @@ change_type: feature
 - 新项目实际演练（测试内真实执行）：`new change` → `gate tasks` → `verify tasks` → `ci` → `archive`，
   以及 `impact --set api=true` 后 `api` 阶段门禁顺序。
 
+## Review 修复（两轴评审后）
+
+- init 提示与 adopt 报告中的旧类型名改为 `new change`；未知类型提示保持可用类型清单。
+- `status` 的可归档判定与门禁共享 `core.ready_to_archive`（消除同一语义的双份实现）。
+- 彻底移除结构化解析中残留的 `subagent_dispatch_plan`（`tasks --json` 不再输出派发计划，派发归编排侧）。
+- 补充 stale 场景测试（验证后修改产物 → `ready_to_archive` 为 false）。
+- 当前状态页对齐新模型：`docs/03-architecture/README.md`（工作流与门禁表述、checklist 阶段）、
+  `docs/08-testing/README.md`（测试覆盖面描述）；`agent-contract.md` 措辞统一。
+- 修复后复验：72 项测试通过、`validate --all` VALID、docs build 通过、diff check clean。
+
 未覆盖：docs/03-architecture/system-design 下历史同步文档中的 `--export-dag` 表述属历史设计记录，本次不重写；
 新模型以本变更的同步文档与 skills 为准。
