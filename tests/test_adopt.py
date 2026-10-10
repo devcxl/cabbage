@@ -105,6 +105,21 @@ class CabbageAdoptTest(unittest.TestCase):
 
             self.assertEqual(first["documents"], second["documents"])
 
+    def test_adopt_reports_frontmatter_failures(self):
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            self.prepare(root)
+            (root / "runbooks").mkdir()
+            bad = root / "runbooks" / "bad.md"
+            bad.write_bytes(b"\xff\xfe")
+
+            data = adopt_project(root, apply=True)
+
+            self.assertTrue((root / "docs" / "13-operations" / "bad.md").exists())
+            self.assertFalse(bad.exists())
+            self.assertTrue(data["warnings"])
+            self.assertIn("frontmatter", data["warnings"][0])
+
 
 if __name__ == "__main__":
     unittest.main()
