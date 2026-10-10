@@ -32,7 +32,7 @@ class CliOutputTest(unittest.TestCase):
     def test_status_lists_change_as_text_without_json(self):
         with TemporaryDirectory() as td:
             root, env = self._project(td)
-            self._cli(root, env, 'new', 'bugfix', 'demo')
+            self._cli(root, env, 'new', 'change', 'demo')
             result = self._cli(root, env, 'status')
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertIn('demo', result.stdout)
@@ -41,7 +41,7 @@ class CliOutputTest(unittest.TestCase):
     def test_status_json_stays_parseable(self):
         with TemporaryDirectory() as td:
             root, env = self._project(td)
-            self._cli(root, env, 'new', 'bugfix', 'demo')
+            self._cli(root, env, 'new', 'change', 'demo')
             result = self._cli(root, env, 'status', '--json')
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertEqual('demo', json.loads(result.stdout)[0]['change'])
@@ -49,7 +49,7 @@ class CliOutputTest(unittest.TestCase):
     def test_next_prints_ready_section(self):
         with TemporaryDirectory() as td:
             root, env = self._project(td)
-            self._cli(root, env, 'new', 'bugfix', 'demo')
+            self._cli(root, env, 'new', 'change', 'demo')
             result = self._cli(root, env, 'next', 'demo')
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
             self.assertIn('ready:', result.stdout)
@@ -57,7 +57,7 @@ class CliOutputTest(unittest.TestCase):
     def test_impact_prints_fields_and_generates_artifact(self):
         with TemporaryDirectory() as td:
             root, env = self._project(td)
-            self._cli(root, env, 'new', 'bugfix', 'demo')
+            self._cli(root, env, 'new', 'change', 'demo')
             result = self._cli(root, env, 'impact', 'demo', '--set', 'api=true')
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertIn('api', result.stdout)
@@ -68,12 +68,12 @@ class CliOutputTest(unittest.TestCase):
         tasks = root / '.cabbage/changes/demo/tasks.md'
         text = re.sub(r'<!--\s*CABBAGE:.*?-->', '', tasks.read_text(), flags=re.S)
         tasks.write_text(text.replace('- [ ]', '- [x]'))
-        return self._cli(root, env, 'verify', 'demo', 'implementation')
+        return self._cli(root, env, 'verify', 'demo', 'tasks')
 
     def test_status_flags_fully_verified_change_as_ready_to_archive(self):
         with TemporaryDirectory() as td:
             root, env = self._project(td)
-            self._cli(root, env, 'new', 'bugfix', 'demo')
+            self._cli(root, env, 'new', 'change', 'demo')
             verify = self._verify_single_record(root, env)
             self.assertEqual(0, verify.returncode, verify.stderr)
             result = self._cli(root, env, 'status')
@@ -85,7 +85,7 @@ class CliOutputTest(unittest.TestCase):
     def test_status_does_not_flag_unfinished_change(self):
         with TemporaryDirectory() as td:
             root, env = self._project(td)
-            self._cli(root, env, 'new', 'bugfix', 'demo')
+            self._cli(root, env, 'new', 'change', 'demo')
             result = self._cli(root, env, 'status')
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertNotIn('ready to archive', result.stdout)

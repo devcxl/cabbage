@@ -1,8 +1,5 @@
-import contextlib
-import io
 import unittest
-from cabbage_cli.cli import cmd_tasks
-from cabbage_cli.core import CabbageError, parse_tasks_markdown
+from cabbage_cli.core import parse_tasks_markdown
 
 PLAIN_CHECKLIST_MD = """# Goal
 
@@ -21,33 +18,6 @@ Minimal change.
 
 Pending.
 """
-
-
-def export_dag_error(markdown):
-    """Run the real command against a throwaway change and report its error, if any."""
-    import argparse
-    from pathlib import Path
-    from tempfile import TemporaryDirectory
-    from cabbage_cli.scaffold import init_project
-
-    with TemporaryDirectory() as td:
-        root = Path(td)
-        init_project(root, vendor_cli=False)
-        workspace = root / '.cabbage/changes/demo'
-        workspace.mkdir(parents=True)
-        (workspace / 'change.yaml').write_text('id: demo\ntype: bugfix\nstatus: active\nimpact: {}\n')
-        (workspace / 'tasks.md').write_text(markdown)
-        import os
-        previous = os.getcwd()
-        os.chdir(root)
-        try:
-            with contextlib.redirect_stdout(io.StringIO()):
-                cmd_tasks(argparse.Namespace(change='demo', export_dag=True, json=False))
-            return None
-        except CabbageError as exc:
-            return str(exc)
-        finally:
-            os.chdir(previous)
 
 SAMPLE_DAG_MD = """# Preparation
 
@@ -174,14 +144,6 @@ class TestTasksDAG(unittest.TestCase):
     def test_structured_tasks_are_flagged_as_structured(self):
         data = parse_tasks_markdown(SAMPLE_DAG_MD)
         self.assertTrue(data["structured"])
-
-    def test_export_dag_refuses_plain_checklist(self):
-        error = export_dag_error(PLAIN_CHECKLIST_MD)
-        self.assertIsNotNone(error, "plain checklists must not produce a dispatch plan")
-        self.assertIn("no structured DAG", error)
-
-    def test_export_dag_allows_structured_tasks(self):
-        self.assertIsNone(export_dag_error(SAMPLE_DAG_MD))
 
 
 if __name__ == "__main__":

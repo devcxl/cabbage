@@ -159,7 +159,9 @@ class TemplateTest(unittest.TestCase):
         text = template.read_text(encoding="utf-8")
         sync_labels = {
             "product": "Product",
+            "design": "Design",
             "architecture": "Architecture",
+            "rfc": "RFC",
             "api": "API",
             "database": "Database",
             "security": "Security",

@@ -22,7 +22,7 @@ def complete(path):
 
 class LightweightWorkflowTest(unittest.TestCase):
     def test_small_changes_need_one_record(self):
-        for kind in ('feature', 'bugfix', 'refactor'):
+        for kind in ('change',):
             with self.subTest(kind=kind), TemporaryDirectory() as td:
                 root = Path(td)
                 init_project(root, vendor_cli=False)
@@ -30,26 +30,27 @@ class LightweightWorkflowTest(unittest.TestCase):
                 workspace = root / '.cabbage/changes/small-change'
                 self.assertEqual(['tasks.md'], sorted(p.name for p in workspace.glob('*.md')))
                 self.assertEqual([], validate_change(root, 'small-change'))
-                self.assertEqual([], gate(root, 'small-change', 'implementation'))
+                self.assertEqual([], gate(root, 'small-change', 'tasks'))
                 self.assertTrue(gate(root, 'small-change', 'merge'))
                 with self.assertRaisesRegex(CabbageError, 'placeholder'):
-                    verify_stage(root, 'small-change', 'implementation')
+                    verify_stage(root, 'small-change', 'tasks')
                 record = workspace / 'tasks.md'
                 record.write_text(re.sub(r'<!--\s*CABBAGE:.*?-->', 'Real content.', record.read_text(), flags=re.S))
                 with self.assertRaisesRegex(CabbageError, 'unchecked'):
-                    verify_stage(root, 'small-change', 'implementation')
+                    verify_stage(root, 'small-change', 'tasks')
                 complete(record)
-                verify_stage(root, 'small-change', 'implementation')
+                verify_stage(root, 'small-change', 'tasks')
                 self.assertEqual([], gate(root, 'small-change', 'merge'))
                 (workspace / 'tasks.md').write_text((workspace / 'tasks.md').read_text() + '\nChanged goal.\n')
                 self.assertTrue(gate(root, 'small-change', 'merge'))
 
     def test_risks_add_only_the_relevant_document_and_gate(self):
-        risks = {'architecture': ('adr', 'adr.md'), 'api': ('api', 'api-design.md'),
+        risks = {'design': ('design', 'tech-spec.md'), 'rfc': ('rfc', 'rfc.md'),
+                 'architecture': ('adr', 'adr.md'), 'api': ('api', 'api-design.md'),
                  'database': ('database', 'database-design.md'),
                  'security': ('security', 'security-review.md'),
                  'deployment': ('release', 'release-plan.md')}
-        for kind in ('feature', 'bugfix', 'refactor'):
+        for kind in ('change',):
             for risk, (stage, filename) in risks.items():
                 with self.subTest(kind=kind, risk=risk), TemporaryDirectory() as td:
                     root = Path(td)
@@ -62,20 +63,20 @@ class LightweightWorkflowTest(unittest.TestCase):
                     dump_yaml(spec_path, spec)
                     ensure_artifacts(root, 'risky-change')
                     self.assertEqual(sorted(['tasks.md', filename]), sorted(p.name for p in workspace.glob('*.md')))
-                    self.assertTrue(gate(root, 'risky-change', 'implementation'))
+                    self.assertTrue(gate(root, 'risky-change', 'tasks'))
                     complete(workspace / 'tasks.md')
                     with self.assertRaisesRegex(CabbageError, 'dependency'):
-                        verify_stage(root, 'risky-change', 'implementation')
+                        verify_stage(root, 'risky-change', 'tasks')
                     complete(workspace / filename)
                     verify_stage(root, 'risky-change', stage)
-                    self.assertEqual([], gate(root, 'risky-change', 'implementation'))
-                    verify_stage(root, 'risky-change', 'implementation')
+                    self.assertEqual([], gate(root, 'risky-change', 'tasks'))
+                    verify_stage(root, 'risky-change', 'tasks')
                     self.assertEqual([], gate(root, 'risky-change', 'merge'))
-                    # Changing a reviewed risk document invalidates implementation too.
+                    # Changing a reviewed risk document invalidates tasks too.
                     (workspace / filename).write_text((workspace / filename).read_text() + '\nChanged risk.\n')
                     statuses = {s['id']: s['status'] for s in stage_statuses(root, 'risky-change')}
-                    self.assertEqual('stale', statuses['implementation'])
-                    self.assertTrue(gate(root, 'risky-change', 'implementation'))
+                    self.assertEqual('stale', statuses['tasks'])
+                    self.assertTrue(gate(root, 'risky-change', 'tasks'))
 
     def test_cli_lifecycle_and_ci_do_not_require_duplicate_small_change_docs(self):
         with TemporaryDirectory() as td:
@@ -94,12 +95,12 @@ class LightweightWorkflowTest(unittest.TestCase):
             git('add', '.')
             git('commit', '-m', 'baseline')
             baseline = git('rev-parse', 'HEAD').strip()
-            cli('new', 'feature', 'small-change')
+            cli('new', 'change', 'small-change')
             cli('next', 'small-change')
-            cli('gate', 'small-change', 'implementation')
+            cli('gate', 'small-change', 'tasks')
             (root / 'app.py').write_text('print("hello")\n')
             complete(root / '.cabbage/changes/small-change/tasks.md')
-            cli('verify', 'small-change', 'implementation')
+            cli('verify', 'small-change', 'tasks')
             cli('tasks', 'small-change')
             cli('validate', 'small-change')
             cli('gate', 'small-change', 'merge')
@@ -111,7 +112,7 @@ class LightweightWorkflowTest(unittest.TestCase):
             cli('impact', 'small-change', '--set', 'api=true')
             complete(root / '.cabbage/changes/small-change/api-design.md')
             cli('verify', 'small-change', 'api')
-            cli('verify', 'small-change', 'implementation')
+            cli('verify', 'small-change', 'tasks')
             git('add', '.')
             git('commit', '-m', 'API risk needs current docs')
             self.assertTrue(any('api=true' in e for e in ci_check(root, baseline)))
@@ -127,20 +128,20 @@ class LightweightWorkflowTest(unittest.TestCase):
         with TemporaryDirectory() as td:
             root = Path(td)
             init_project(root, vendor_cli=False)
-            new_change(root, 'feature', 'combined-risk')
+            new_change(root, 'change', 'combined-risk')
             workspace = root / '.cabbage/changes/combined-risk'
             spec = load_yaml(workspace / 'change.yaml')
-            for risk in ('architecture', 'api', 'database', 'security', 'deployment'):
+            for risk in ('design', 'rfc', 'architecture', 'api', 'database', 'security', 'deployment'):
                 spec['impact'][risk] = True
             dump_yaml(workspace / 'change.yaml', spec)
             ensure_artifacts(root, 'combined-risk')
-            self.assertEqual(6, len(list(workspace.glob('*.md'))))
-            stages = [s for s in stage_statuses(root, 'combined-risk') if s['id'] != 'implementation']
+            self.assertEqual(8, len(list(workspace.glob('*.md'))))
+            stages = [s for s in stage_statuses(root, 'combined-risk') if s['id'] != 'tasks']
             for stage in stages:
-                self.assertTrue(gate(root, 'combined-risk', 'implementation'))
+                self.assertTrue(gate(root, 'combined-risk', 'tasks'))
                 complete(workspace / stage['artifact'])
                 verify_stage(root, 'combined-risk', stage['id'])
-            self.assertEqual([], gate(root, 'combined-risk', 'implementation'))
+            self.assertEqual([], gate(root, 'combined-risk', 'tasks'))
             self.assertTrue(gate(root, 'combined-risk', 'merge'))
 
     def test_old_workflows_still_require_product_and_testing_docs(self):
@@ -170,12 +171,20 @@ class LightweightWorkflowTest(unittest.TestCase):
         with TemporaryDirectory() as td:
             root = Path(td)
             init_project(root, vendor_cli=False)
-            new_change(root, 'hotfix', 'hotfix-change')
-            hotfix = load_yaml(root / '.cabbage/changes/hotfix-change/change.yaml')
-            self.assertFalse(hotfix['impact']['operations'])
-            self.assertTrue(hotfix['impact']['testing'])
+            new_change(root, 'change', 'ordinary-change')
+            ordinary = load_yaml(root / '.cabbage/changes/ordinary-change/change.yaml')
+            self.assertTrue(ordinary['impact']['testing'])
+            self.assertTrue(ordinary['impact']['product'])
+            self.assertFalse(ordinary['impact']['operations'])
 
-    def test_incident_and_hotfix_defaults_do_not_block_ci(self):
+    def test_unknown_change_type_lists_available_types(self):
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            init_project(root, vendor_cli=False)
+            with self.assertRaisesRegex(CabbageError, 'available: change, incident'):
+                new_change(root, 'bugfix', 'old-name')
+
+    def test_incident_and_change_defaults_do_not_block_ci(self):
         from unittest.mock import patch
         with TemporaryDirectory() as td:
             root = Path(td)
@@ -191,18 +200,16 @@ class LightweightWorkflowTest(unittest.TestCase):
         with TemporaryDirectory() as td:
             root = Path(td)
             init_project(root, vendor_cli=False)
-            new_change(root, 'hotfix', 'regression')
-            for stage in stage_statuses(root, 'regression'):
-                complete(root / '.cabbage/changes/regression' / stage['artifact'])
-                verify_stage(root, 'regression', stage['id'])
-            with patch('cabbage_cli.core.git_changed_files', return_value=['app.py', '.cabbage/changes/regression/tasks.md']):
+            new_change(root, 'change', 'ordinary')
+            for stage in stage_statuses(root, 'ordinary'):
+                if stage['status'] == 'skipped':
+                    continue
+                complete(root / '.cabbage/changes/ordinary' / stage['artifact'])
+                verify_stage(root, 'ordinary', stage['id'])
+            with patch('cabbage_cli.core.git_changed_files', return_value=['app.py', '.cabbage/changes/ordinary/tasks.md']):
                 errors = ci_check(root, 'main')
-            # The testing rule still applies to hotfix and the tests stage can satisfy it.
-            self.assertTrue(any('testing=true' in e for e in errors))
-            self.assertFalse(any('operations=true' in e for e in errors), errors)
-            with patch('cabbage_cli.core.git_changed_files',
-                       return_value=['app.py', '.cabbage/changes/regression/tasks.md', 'docs/08-testing/regression.md']):
-                errors = ci_check(root, 'main')
+            # record_covers 覆盖 product/testing：普通变更不要求重复产品和测试目录文档
+            self.assertFalse(any('product=true' in e for e in errors), errors)
             self.assertFalse(any('testing=true' in e for e in errors), errors)
             self.assertFalse(any('operations=true' in e for e in errors), errors)
 
