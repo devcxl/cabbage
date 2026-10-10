@@ -32,6 +32,14 @@ jobs:
         run: |
           python -m unittest discover tests
 
+      - name: Verify tag matches package version
+        run: |
+          version="$(python -c 'import cabbage_cli; print(cabbage_cli.__version__)')"
+          if [ "v${version}" != "${{ github.ref_name }}" ]; then
+            echo "tag ${{ github.ref_name }} does not match package version v${version}" >&2
+            exit 1
+          fi
+
       - name: Build Python Distribution Package
         run: |
           python -m build

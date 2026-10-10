@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="${1:-0.1.0}"
+VERSION="${1:-$(sed -n 's/^__version__ = "\(.*\)"/\1/p' "$ROOT/cabbage_cli/__init__.py")}"
 VERSION="${VERSION#v}"
 
 DIST_DIR="$ROOT/dist"

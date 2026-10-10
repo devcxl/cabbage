@@ -1,6 +1,5 @@
-name: architecture
 stages:
-  - {id: impact, artifact: impact.md, template: impact.md, description: Change impact, required_headings: [Impact Matrix, Risks]}
+  - {id: impact, artifact: impact.md, template: impact.md, required_headings: [Impact Matrix, Risks]}
   - {id: rfc, artifact: rfc.md, template: rfc.md, depends_on: [impact], required_headings: [Problem, Proposal, Alternatives]}
   - {id: design, artifact: tech-spec.md, template: tech-spec.md, depends_on: [rfc], required_headings: [Context, Design, Failure Modes, Rollout]}
   - {id: adr, artifact: adr.md, template: adr.md, depends_on: [design], required_headings: [Context, Decision, Consequences]}

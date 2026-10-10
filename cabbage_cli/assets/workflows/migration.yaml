@@ -1,4 +1,3 @@
-name: migration
 stages:
   - {id: impact, artifact: impact.md, template: impact.md, required_headings: [Impact Matrix, Risks]}
   - {id: design, artifact: tech-spec.md, template: tech-spec.md, depends_on: [impact], required_headings: [Context, Design, Failure Modes, Rollout]}

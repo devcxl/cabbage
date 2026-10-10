@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/devcxl/cabbage/master/scripts/insta
 ### 系统包
 
 Arch Linux：在 `packaging/aur` 执行 `makepkg -si`，或使用 `yay -S cabbage-git`。
-Debian / Ubuntu：从 [Releases](https://github.com/devcxl/cabbage/releases) 下载 `.deb`，
+Debian / Ubuntu：从 [Releases](https://github.com/devcxl/cabbage/releases) 下载已发布的 `.deb`，
 执行 `sudo dpkg -i cabbage_*_all.deb`；缺少依赖时执行 `sudo apt-get install -f`。
 
 ## 快速开始：小变更
@@ -114,6 +114,8 @@ cabbage sync update-api
 其余按任务类型选择：`cabbage-change`（变更流程与门禁）、`cabbage-research`（调研与选型）、
 `cabbage-decision`（ADR/RFC）、`cabbage-incident`（事故复盘）、`cabbage-docs`（写作与站点）、
 `cabbage-adopt`（存量接入与强制执行）。
+
+把 `integrations/agent-contract.md` 的内容加入项目的 AGENTS.md，可让 agent 遵守同一套规则。
 
 ## 验证
 
