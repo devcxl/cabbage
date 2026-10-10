@@ -5,9 +5,9 @@ Add the following rules to the repository's agent instructions (`AGENTS.md`, `CL
 ```text
 For any code-changing task, identify or create a cabbage change before implementation.
 Run `cabbage status <change> --json` and `cabbage next <change> --json`.
-Do not implement while `cabbage gate <change> implementation` fails.
+Do not implement while the pre-task gate fails (`cabbage gate <change> tasks` in new projects; use the stage ID that `next` reports).
 Use the project's actual stage IDs; existing workflows are not automatically migrated.
-For new lightweight feature/bugfix/refactor changes, write Goal and Design in tasks.md before implementation.
+For ordinary change records (new projects: `change` / `incident`), write Goal and Design in tasks.md before implementation.
 Declare architecture/API/database/security/high-risk deployment impacts before implementation and verify any enabled specialist stages.
 Complete tasks and record actual validation results before verifying implementation; do not require DAGs or duplicate PRD/test-plan documents for ordinary changes.
 Before completion, run `cabbage validate <change>` and `cabbage gate <change> merge`.

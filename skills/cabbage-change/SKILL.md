@@ -21,16 +21,16 @@ cabbage next <change-id>          # 当前可做与被阻塞的阶段
 
 ## 默认路径：一次变更一份记录
 
-新初始化项目的 `feature / bugfix / refactor` 只有一份 `tasks.md`，阶段 ID 为 `implementation`，
+新初始化项目的 `change` 只有一份 `tasks.md`，阶段 ID 为 `tasks`，
 必须包含 `Goal`、`Design`、`Tasks`、`Verification`。
 
 ```bash
-cabbage new bugfix fix-label
+cabbage new change fix-label
 # 填写 tasks.md 的 Goal（含复现的问题）和 Design（最小修复方案）
-cabbage gate fix-label implementation     # 无高风险前置时直接 ALLOWED
+cabbage gate fix-label tasks     # 无高风险前置时直接 ALLOWED
 # 复现失败 → 最小修复 → 回归测试
 # 完成任务清单并写入真实命令与结果
-cabbage verify fix-label implementation
+cabbage verify fix-label tasks
 cabbage validate fix-label
 cabbage gate fix-label merge
 cabbage archive fix-label
@@ -44,13 +44,15 @@ cabbage archive fix-label
 实现前评估真实风险，用现有影响字段激活专项阶段：
 
 ```bash
-cabbage new feature update-api
+cabbage new change update-api
 cabbage impact update-api --set api=true --set security=true
 cabbage next update-api
 ```
 
 | 影响标记 | 增加的阶段 / 文档 | 含义 |
 | --- | --- | --- |
+| `design=true` | `design` / `tech-spec.md` | 需要专项技术方案（复杂设计的完整设计文档） |
+| `rfc=true` | `rfc` / `rfc.md` | 需要跨团队评审、方案尚未定案 |
 | `architecture=true` | `adr` / `adr.md` | 组件边界、拓扑或关键架构决策变化 |
 | `api=true` | `api` / `api-design.md` | 外部接口契约、消息格式、兼容性变化 |
 | `database=true` | `database` / `database-design.md` | 表结构、索引、迁移或数据安全变化 |
@@ -60,7 +62,7 @@ cabbage next update-api
 发布计划的写法（顺序、成功信号、可测回滚触发条件、数据处置）见
 [发布与回滚方案](references/release-plan.md)。
 
-专项阶段位于 `implementation` 之前，必须逐一验证后才通过实现门禁。
+专项阶段位于 `tasks` 之前，必须逐一验证后才通过实现门禁。
 专项文档写待执行的步骤与验证方法，真实执行结果写入 `tasks.md`，不要在实现前伪造测试证据。
 
 风险由人或 Agent 判断，CLI 不会自动推断。不要为少写文档而隐瞒实际影响；
@@ -71,15 +73,16 @@ cabbage next update-api
 
 ## 其他变更类型
 
+新项目只有 `incident` 为独立专项工作流；原 `migration / integration / architecture / hotfix`
+场景改由 `change` + 影响标记组合表达（例如数据迁移声明 `database=true` 与 `deployment=true`，
+生产紧急修复走最轻声明并在 `tasks.md` 记录真实验证）：
+
 | 类型 | 用途 | 阶段来源 |
 | --- | --- | --- |
-| `architecture` | 影响多个模块的架构调整 | 含 `impact`、RFC、`tech-spec` 等专项阶段 |
-| `migration` | 数据迁移，默认开启 database/deployment | 专项阶段 + 条件高风险阶段 |
-| `integration` | 对接外部系统，默认开启 api | 含 `requirement` 等专项阶段 |
-| `hotfix` | 生产紧急修复 | `impact` → `tests` → `implementation` → `release` |
-| `incident` | 事故记录与复盘 | 见 `cabbage-incident` skill |
+| `incident` | 事故记录与复盘 | incident → postmortem → tasks，见 `cabbage-incident` skill |
 
-这些工作流的阶段与默认影响以 `.cabbage/workflows/<type>.yaml` 和 `next` 输出为准。
+旧项目保留其自身 `.cabbage/workflows/` 中的全部类型（feature / bugfix / refactor / hotfix 等），
+阶段与默认影响以工作流文件和 `next` 输出为准。
 不要假设任意影响字段都能凭空新增一个工作流未定义的阶段。
 纯文档更新可直接修改归属文档，写作用 `cabbage-docs` skill。
 
@@ -116,10 +119,7 @@ cabbage next update-api
 - `Blocked By` 写任务 ID（`Task 1`）或 `None`，多个用逗号分隔；不要写任务标题。
 - 只有写完整结构化分节才被识别为任务；否则按普通清单处理。
 - `cabbage tasks <id>` 查看就绪与阻塞情况，`--json` 输出结构化结果。
-- `--export-dag` 只在存在结构化分节时输出派发数据；普通清单会**报错并说明原因**，
-  不会凭空生成依赖。它只导出数据，不执行任务。
-- 派发数据中的 `verification` 来自任务自己的 `Verification` 字段；
-  普通清单没有该字段，因此不会被当作可派发任务。
+- 任务派发由编排侧（Agent/插件）负责，CLI 只读展示，不执行任务。
 
 并行子代理与多方案比较按任务需要采用，不是所有变更的前置义务。
 复杂任务可先做目标拆解（分层拆到可独立执行），再落成结构化分节。
@@ -141,8 +141,7 @@ cabbage next update-api
 | --- | --- |
 | `placeholder content remains` | 清除 `TODO`/`TBD`/`FIXME` 及模板提示文本 |
 | `unchecked tasks remain` | 完成清单项后改为 `- [x]` |
-| `gate implementation: BLOCKED` | 用 `next` 找到未完成的已启用前置阶段并验证 |
-| `no structured DAG` | `--export-dag` 只接受结构化任务分节；普通清单无需导出 |
+| `gate tasks: BLOCKED` | 用 `next` 找到未完成的已启用前置阶段并验证 |
 | 阶段 `stale` | 对照上游变化重新审阅，再 `cabbage verify` |
 | `broken link` | 修正相对路径或锚点，见 `cabbage-docs` skill |
 

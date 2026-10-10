@@ -98,8 +98,8 @@ PoC 的边界：只验证会导致方案被否决的那个假设，不开发完�
 **常见误区**：把调研结论直接写成 ADR，跳过 `cabbage-change` 的影响声明；
 或反过来，为了让调研"入库"而创建只包含调研内容的变更记录。两者都不要。
 
-如果同时涉及要在生产落地的架构变更，先看 `cabbage-change` 的 `architecture` 变更类型
-（含 `impact` → `rfc` → `design` → `adr` 阶段），不要自行拼装流程。
+如果同时涉及要在生产落地的架构变更，先看 `cabbage-change` 的影响标记组合
+（`architecture=true` → adr；`design=true` → tech-spec；`rfc=true` → rfc），不要自行拼装流程。
 
 ## 同族 skill
 

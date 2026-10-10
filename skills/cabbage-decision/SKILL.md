@@ -21,16 +21,16 @@ description: Write architecture decision records and RFCs in a Cabbage project -
 ## 在变更流程中启用
 
 ```bash
-cabbage new architecture decide-storage-engine
+cabbage new change decide-storage-engine
 cabbage impact decide-storage-engine --set architecture=true
 cabbage next decide-storage-engine
 # 填写 adr.md
 cabbage verify decide-storage-engine adr
-cabbage gate decide-storage-engine implementation
+cabbage gate decide-storage-engine tasks
 ```
 
-`cabbage new architecture` 使用专项工作流（含 `impact`、RFC、`tech-spec` 等阶段）；
-普通 `feature` 变更声明 `architecture=true` 只增加 `adr` 阶段。两者都以 `next` 为准。
+`cabbage new change` 默认只增加 `adr` 阶段；需要完整技术方案时声明 `design=true`（生成 `tech-spec.md`），
+需要跨团队评审时再声明 `rfc=true`（生成 `rfc.md`）。以 `next` 为准。
 需要长期保留时通过 `cabbage sync` 复制到 `docs/03-architecture/adr/`，
 默认文件名为 `<change-id>.md`，不是自动分配编号。
 

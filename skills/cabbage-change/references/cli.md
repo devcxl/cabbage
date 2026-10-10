@@ -60,12 +60,12 @@ cabbage adopt --apply
 #### `cabbage new <type> <change-id>`
 Create a new active change workspace under `.cabbage/changes/<change-id>/`.
 - **Arguments**:
-  - `<type>`: `feature` | `architecture` | `bugfix` | `hotfix` | `refactor` | `migration` | `integration` | `incident`
+  - `<type>`: `change` | `incident` in new projects; older projects keep the types their own `.cabbage/workflows/` defines (`feature`, `architecture`, ...).
   - `<change-id>`: Unique identifier in kebab-case (e.g., `user-oauth-login`).
-- **Behavior**: Creates `change.yaml` and enabled workflow artifacts. `state.json` is created on first successful verification. New projects use one `tasks.md` for `feature`, `bugfix`, and `refactor`; risk flags add only related specialist documents. Existing project workflows are not automatically upgraded. Use `status` or `next` to inspect actual stages.
+- **Behavior**: Creates `change.yaml` and enabled workflow artifacts. `state.json` is created on first successful verification. New projects use one `tasks.md` for ordinary changes; risk flags add only related specialist documents. Existing project workflows are not automatically upgraded. Use `status` or `next` to inspect actual stages.
 
 ```bash
-cabbage new feature user-oauth-login
+cabbage new change user-oauth-login
 ```
 
 #### `cabbage status [change-id] [--json]`
@@ -89,7 +89,7 @@ cabbage next user-oauth-login
 
 #### `cabbage impact <change-id> [--set field=true|false] [--json]`
 Inspect or mutate the impact analysis matrix of a change.
-- **Available Fields**: the project's `impact_fields`, which new projects default to `product`, `architecture`, `api`, `database`, `security`, `testing`, `deployment`, `operations`, `performance`.
+- **Available Fields**: the project's `impact_fields`, which new projects default to `product`, `design`, `architecture`, `rfc`, `api`, `database`, `security`, `testing`, `deployment`, `operations`, `performance`.
 - **Behavior**: Updates `change.yaml`, generates enabled conditional artifacts, and updates an existing impact table. Affected verified stages derive `stale` status from changed signatures; unrelated stages need not become stale.
   Without `--json` it prints one `field` and `Yes`/`No` line per impact field; `--json` keeps the structured shape unchanged.
 
@@ -97,20 +97,17 @@ Inspect or mutate the impact analysis matrix of a change.
 cabbage impact user-oauth-login --set api=true --set database=true
 ```
 
-#### `cabbage tasks <change-id> [--export-dag] [--json]`
+#### `cabbage tasks <change-id> [--json]`
 Inspect checklist progress and, for structured tasks, dependencies and parallel readiness.
 - **Behavior**: A plain `# Tasks` checklist is the default and needs no DAG. Only
   `## Task <id>: <title>` sections (with `Builds`, `Blocked By`, `Parallel Group`,
   `Verification`) form a structured DAG; anything else is reported as a plain checklist.
+  Task dispatch belongs to the orchestrating agent, not this CLI view.
 - **Flags**:
   - `--json`: Output parsed tasks and parallel groups as structured JSON (includes `structured`).
-  - `--export-dag`: Output a subagent dispatch plan for unblocked tasks. Exits with an error
-    when `tasks.md` has no structured sections, because a plain checklist declares no
-    dependencies or verification commands. It emits data only; it never executes tasks.
 
 ```bash
 cabbage tasks user-oauth-login
-cabbage tasks user-oauth-login --export-dag
 cabbage tasks user-oauth-login --json
 ```
 
@@ -131,9 +128,9 @@ Verify a single stage artifact, check content completeness, ensure no placeholde
 
 ```bash
 # Use stage IDs returned by `next`, not artifact filenames.
-# A new project's ordinary feature needs only this after implementation and tests:
-cabbage verify user-oauth-login implementation
-# If api=true, verify `api` before starting implementation, then verify implementation again.
+# A new project's ordinary change needs only this after implementation and tests:
+cabbage verify user-oauth-login tasks
+# If api=true, verify `api` before starting tasks, then verify tasks again.
 ```
 
 #### `cabbage validate [<change-id> | --all] [--json]`
@@ -146,10 +143,10 @@ cabbage validate --all
 
 #### `cabbage gate <change-id> <target> [--json]`
 Evaluate readiness for specific milestones in the software development lifecycle.
-- **Targets**: `implementation` covers the enabled stages before it; `merge` and `archive` require every enabled stage and do not inspect Git merge status. The full gate table is in `lifecycle.md`.
+- **Targets**: any stage ID covers the enabled stages before it (new projects use `tasks`); `merge` and `archive` require every enabled stage and do not inspect Git merge status. The full gate table is in `lifecycle.md`.
 
 ```bash
-cabbage gate user-oauth-login implementation
+cabbage gate user-oauth-login tasks
 cabbage gate user-oauth-login merge
 cabbage gate user-oauth-login archive
 ```
