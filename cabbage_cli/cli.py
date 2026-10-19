@@ -3,7 +3,7 @@ import argparse, json, shutil, subprocess, sys
 from datetime import datetime
 from pathlib import Path
 from . import __version__
-from .core import (CabbageError, archive_root, change_dir, change_spec, changes_root,
+from .core import (CabbageError, archive_root, change_dir, change_ids, change_spec,
                    ci_check, condition_enabled, dump_yaml, gate, get_change_tasks_dag,
                    load_config, load_yaml, project_root, ready_to_archive, stage_map, stage_statuses,
                    sync_change_to_docs, validate_change, verify_stage, workflow)
@@ -116,15 +116,14 @@ def cmd_status(a):
         else:
             for x in items: print(f"{x['status']:7} {x['id']:16} {x.get('artifact') or ''}")
     else:
-        dirs=changes_root(root); rows=[]
-        for p in sorted(dirs.iterdir() if dirs.exists() else []):
-            if p.is_dir() and (p/"change.yaml").exists():
-                st=stage_statuses(root,p.name)
-                done=sum(x['status']=='done' for x in st)
-                total=sum(x['status']!='skipped' for x in st)
-                stale=sum(x['status']=='stale' for x in st)
-                rows.append({"change":p.name,"done":done,"total":total,"stale":stale,
-                             "ready_to_archive":ready_to_archive(st)})
+        rows=[]
+        for cid in change_ids(root):
+            st=stage_statuses(root,cid)
+            done=sum(x['status']=='done' for x in st)
+            total=sum(x['status']!='skipped' for x in st)
+            stale=sum(x['status']=='stale' for x in st)
+            rows.append({"change":cid,"done":done,"total":total,"stale":stale,
+                         "ready_to_archive":ready_to_archive(st)})
         if a.json: emit(rows)
         elif not rows: print("no active changes")
         else:
@@ -169,7 +168,7 @@ def cmd_validate(a):
     root=project_root(); errors=[]
     ids=[]
     if a.all:
-        ids=[p.name for p in changes_root(root).iterdir() if p.is_dir() and (p/'change.yaml').exists()]
+        ids=change_ids(root)
     elif a.change: ids=[a.change]
     else: raise CabbageError("provide a change id or --all")
     for cid in ids: errors.extend(f"{cid}: {e}" for e in validate_change(root,cid))

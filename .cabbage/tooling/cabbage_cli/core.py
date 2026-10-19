@@ -93,6 +93,13 @@ def change_dir(root: Path, change_id: str) -> Path:
 def changes_root(root: Path) -> Path:
     return root / CABBAGE_DIR / "changes"
 
+def change_ids(root: Path) -> list[str]:
+    """Existing change ids, tolerating a project with no changes directory."""
+    root_dir = changes_root(root)
+    if not root_dir.exists():
+        return []
+    return sorted(p.name for p in root_dir.iterdir() if p.is_dir() and (p / "change.yaml").exists())
+
 def archive_root(root: Path) -> Path:
     return root / CABBAGE_DIR / "archive"
 

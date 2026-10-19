@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
@@ -28,6 +29,14 @@ class CliOutputTest(unittest.TestCase):
             result = self._cli(root, env, 'status')
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertIn('no active changes', result.stdout)
+
+    def test_validate_all_tolerates_missing_changes_directory(self):
+        with TemporaryDirectory() as td:
+            root, env = self._project(td)
+            shutil.rmtree(root / '.cabbage' / 'changes')
+            result = self._cli(root, env, 'validate', '--all')
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn('VALID', result.stdout)
 
     def test_status_lists_change_as_text_without_json(self):
         with TemporaryDirectory() as td:
