@@ -2,7 +2,7 @@
 origin_change: integrate-openspec-workflow
 change_type: feature
 cabbage_stage: adr
-synced_at: '2026-09-01T13:48:39.122752+00:00'
+synced_at: '2026-10-19T01:04:31.515597+00:00'
 ---
 
 # Status

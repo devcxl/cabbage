@@ -2,7 +2,7 @@
 origin_change: integrate-openspec-workflow
 change_type: feature
 cabbage_stage: api
-synced_at: '2026-09-01T13:48:39.123387+00:00'
+synced_at: '2026-10-19T01:04:31.516440+00:00'
 ---
 
 # Overview

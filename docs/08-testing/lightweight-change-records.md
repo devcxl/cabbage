@@ -2,7 +2,7 @@
 origin_change: lightweight-change-records
 change_type: feature
 cabbage_stage: tests
-synced_at: '2026-09-12T09:42:25.203169+00:00'
+synced_at: '2026-10-19T01:04:31.654216+00:00'
 ---
 
 # Strategy

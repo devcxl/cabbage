@@ -2,7 +2,7 @@
 origin_change: lightweight-change-records
 change_type: feature
 cabbage_stage: design
-synced_at: '2026-09-12T09:42:25.201924+00:00'
+synced_at: '2026-10-19T01:04:31.652923+00:00'
 ---
 
 # Context

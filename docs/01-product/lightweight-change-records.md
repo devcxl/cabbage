@@ -2,7 +2,7 @@
 origin_change: lightweight-change-records
 change_type: feature
 cabbage_stage: requirement
-synced_at: '2026-09-12T09:42:25.200870+00:00'
+synced_at: '2026-10-19T01:04:31.651414+00:00'
 ---
 
 # Goal
