@@ -2,7 +2,7 @@
 origin_change: close-loop-gaps
 change_type: feature
 cabbage_stage: design
-synced_at: '2026-10-10T06:36:08.944839+00:00'
+synced_at: '2026-10-19T00:49:56.390887+00:00'
 ---
 
 # Context

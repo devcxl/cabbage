@@ -2,7 +2,7 @@
 origin_change: close-loop-gaps
 change_type: feature
 cabbage_stage: requirement
-synced_at: '2026-10-10T06:36:08.943842+00:00'
+synced_at: '2026-10-19T00:49:56.389489+00:00'
 ---
 
 # Goal

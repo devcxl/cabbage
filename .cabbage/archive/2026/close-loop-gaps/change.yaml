@@ -1,6 +1,6 @@
-id: collapse-change-workflows
+id: close-loop-gaps
 type: feature
-status: active
+status: archived
 impact:
   product: true
   architecture: false

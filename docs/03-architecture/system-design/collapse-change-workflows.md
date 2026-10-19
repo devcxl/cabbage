@@ -2,7 +2,7 @@
 origin_change: collapse-change-workflows
 change_type: feature
 cabbage_stage: design
-synced_at: '2026-10-10T09:09:38.925135+00:00'
+synced_at: '2026-10-19T00:49:58.741176+00:00'
 ---
 
 # Context
