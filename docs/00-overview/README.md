@@ -6,26 +6,27 @@ Cabbage 是本地文档与变更管理 CLI：**小变更一份记录，高风险
 
 ```bash
 cabbage init
-cabbage new bugfix fix-label
+cabbage new change fix-label
 # 填写 tasks.md 的目标、方案，确认没有需要声明的专项风险
-cabbage gate fix-label implementation
+cabbage gate fix-label tasks
 # 复现、修复、测试后，完成任务并写入实际验证结果
-cabbage verify fix-label implementation
+cabbage verify fix-label tasks
 cabbage gate fix-label merge
 # 提交后执行 CI；确认合并后归档
 cabbage archive fix-label
 ```
 
-新初始化项目的 `feature / bugfix / refactor` 只需一份人工填写的 `tasks.md`。
+新初始化项目的 `change` 只需一份人工填写的 `tasks.md`。
 `change.yaml` 和 `state.json` 由 CLI 管理。不强制额外 PRD、测试计划、DAG 或多方案比较。
 
 ## 按风险展开
 
-实现前用 `impact --set` 声明架构、外部 API、数据库、安全或高风险发布影响，
-工具分别增加 ADR、API、数据库、安全和发布方案。相关阶段验证通过后才允许实现。
+实现前用 `impact --set` 声明设计、RFC、架构、外部 API、数据库、安全或高风险发布影响，
+工具分别增加技术方案、RFC、ADR、API、数据库、安全和发布方案。相关阶段验证通过后才允许实现。
 风险由使用者判断，不会从代码自动识别。已有文档失真时仍需修正。
 
-`architecture / migration / integration / hotfix / incident` 保留专项流程。
+新项目仅 `incident` 保留专项流程；`migration / integration / architecture / hotfix`
+场景由 `change` + 影响标记组合表达，旧项目的既有工作流继续按原样使用。
 
 ## 旧项目保持原样
 

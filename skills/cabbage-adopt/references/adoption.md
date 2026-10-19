@@ -69,7 +69,7 @@ ADR, RFC and incident documents are decision history, not current state:
 1. Record the completed migration in a change record so the work itself is auditable:
 
    ```bash
-   cabbage new feature adopt-existing-docs
+   cabbage new change adopt-existing-docs
    ```
 
 2. Fill `prd.md` and `tasks.md` with what was moved and what remains; complete the stages you actually ran.

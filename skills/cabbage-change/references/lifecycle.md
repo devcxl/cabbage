@@ -9,7 +9,7 @@ This document details the lifecycle stages, state transitions, cryptographic sig
 A change progresses through two top-level states:
 
 ```text
-[ active ] ─── (implementation & verification) ───► [ gate: archive ] ───► [ archived ]
+[ active ] ─── (tasks & verification) ───► [ gate: archive ] ───► [ archived ]
 ```
 
 - **Active**: Workspace located at `.cabbage/changes/<change-id>/`. Work is actively planned, designed, implemented, and verified.
@@ -19,12 +19,13 @@ A change progresses through two top-level states:
 
 ## 2. Stage State Machine
 
-New projects use a single `implementation` stage backed by `tasks.md` for ordinary
-features, fixes, and refactors. Risk flags enable specialist stages before it;
-without those flags the implementation gate has no prerequisites. The merge gate
-still requires the completed and verified record. Existing project workflows are
-not migrated. The record is retained in the archive, not copied into product and
-testing directories.
+New projects use a single `tasks` stage backed by `tasks.md` for ordinary
+changes. Risk flags (`design`, `rfc`, `architecture`, `api`, `database`,
+`security`, `deployment`) enable specialist stages before it; without those
+flags the tasks gate has no prerequisites. The merge gate still requires the
+completed and verified record. Existing project workflows are not migrated.
+The record is retained in the archive, not copied into product and testing
+directories.
 
 Each workflow stage inside a change has one of four derived states:
 
@@ -61,7 +62,7 @@ To prevent documentation from rotting or going out of sync with code and design:
 3. **Cascading Invalidation**: If an upstream stage artifact is edited:
    - The upstream stage's hash changes.
    - All dependent downstream stages automatically evaluate to `stale`.
-   - Gate checks (`gate implementation`, `gate merge`) will block until the stale stages are re-verified.
+   - Gate checks (`gate <stage>`, `gate merge`) will block until the stale stages are re-verified.
 
 ---
 
@@ -82,15 +83,15 @@ Specifications produced during a change are synchronized into persistent, long-l
 
 | Gate Target | Enforced Conditions | Next Permitted Action |
 |---|---|---|
-| `cabbage gate <change> implementation` | All enabled stages before `implementation` in the workflow are `done` | Begin implementation |
+| `cabbage gate <change> <stage-id>` | All enabled stages before that stage in the workflow are `done` (new projects use `tasks`) | Begin that stage |
 | `cabbage gate <change> merge` | All enabled stages are `done`, no `stale` stages | Request merge |
 | `cabbage gate <change> archive` | Same stage checks as `merge`; Git merge status is not inspected | Archive after independently confirming merge |
 
-Stage IDs are not artifact filenames. New lightweight workflows use `adr`, `api`,
-`database`, `security`, `release` and `implementation`; older or specialist
-workflows may use `requirement`, `impact`, `design` and `tests`. Always consult
-`cabbage next <change-id>` for the current project's actual stages instead of
-guessing or reusing another project's names.
+Stage IDs are not artifact filenames. New lightweight workflows use `tasks` and the
+specialist stages `design`, `rfc`, `adr`, `api`, `database`, `security`, `release`;
+older projects may use `requirement`, `impact`, `design`, `tests` and `implementation`.
+Always consult `cabbage next <change-id>` for the current project's actual stages
+instead of guessing or reusing another project's names.
 
 Standalone `sync` copies mapped artifacts without a gate check. Run `gate merge`
 first when publishing final documents. It does not combine successive change

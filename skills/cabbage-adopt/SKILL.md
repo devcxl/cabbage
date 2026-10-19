@@ -48,7 +48,7 @@ cabbage adopt --json   # 结构化输出，便于脚本处理
 迁移本身也要可审计：
 
 ```bash
-cabbage new feature adopt-existing-docs
+cabbage new change adopt-existing-docs
 # 填写记录并验证
 cabbage validate adopt-existing-docs
 cabbage docs build

@@ -5,7 +5,7 @@ from pathlib import Path
 from . import __version__
 from .core import (CabbageError, archive_root, change_dir, change_spec, changes_root,
                    ci_check, condition_enabled, dump_yaml, gate, get_change_tasks_dag,
-                   load_config, load_yaml, project_root, stage_map, stage_statuses,
+                   load_config, load_yaml, project_root, ready_to_archive, stage_map, stage_statuses,
                    sync_change_to_docs, validate_change, verify_stage, workflow)
 from .scaffold import init_project, new_change, ensure_artifacts, adopt_project, discard_change
 
@@ -16,7 +16,7 @@ def emit(data):
 def cmd_init(a):
     root=Path.cwd().resolve(); init_project(root,a.force,not a.no_vendor_cli)
     print("initialized cabbage")
-    print("next: cabbage new feature <change-id>")
+    print("next: cabbage new change <change-id>")
     print("existing docs to onboard? run: cabbage adopt")
 
 def cmd_adopt(a):
@@ -119,11 +119,20 @@ def cmd_status(a):
         dirs=changes_root(root); rows=[]
         for p in sorted(dirs.iterdir() if dirs.exists() else []):
             if p.is_dir() and (p/"change.yaml").exists():
-                st=stage_statuses(root,p.name); rows.append({"change":p.name,"done":sum(x['status']=='done' for x in st),"total":sum(x['status']!='skipped' for x in st),"stale":sum(x['status']=='stale' for x in st)})
+                st=stage_statuses(root,p.name)
+                done=sum(x['status']=='done' for x in st)
+                total=sum(x['status']!='skipped' for x in st)
+                stale=sum(x['status']=='stale' for x in st)
+                rows.append({"change":p.name,"done":done,"total":total,"stale":stale,
+                             "ready_to_archive":ready_to_archive(st)})
         if a.json: emit(rows)
         elif not rows: print("no active changes")
         else:
             for r in rows: print(f"{r['change']:<20} {r['done']}/{r['total']} done  {r['stale']} stale")
+            ready=[r["change"] for r in rows if r["ready_to_archive"]]
+            if ready:
+                print(f"\n{len(ready)} change(s) fully verified and ready to archive.")
+                print("After confirming the merge, run: cabbage archive <change-id>")
 
 def cmd_next(a):
     root=project_root(); sts=stage_statuses(root,a.change); status={x['id']:x['status'] for x in sts}; spec=change_spec(root,a.change); wf,_=workflow(root,spec['type']); sm=stage_map(wf)
@@ -220,41 +229,6 @@ def cmd_docs(a):
 def cmd_tasks(a):
     root=project_root(); data=get_change_tasks_dag(root, a.change)
     if a.json: emit(data); return 0
-    if a.export_dag:
-        if not data.get("structured"):
-            raise CabbageError(
-                f"no structured DAG in `{a.change}`/tasks.md: found only a plain checklist. "
-                "Use `## Task <id>: <title>` sections with Blocked By and Verification "
-                "to declare dependencies, or skip DAG export for this change."
-            )
-        payload = {
-            "change": data["change"],
-            "summary": {
-                "total": data["total_tasks"],
-                "completed": data["completed_tasks"],
-                "ready": data["ready_tasks"],
-                "blocked": data["blocked_tasks"],
-            },
-            "parallel_groups": {
-                grp: [
-                    {
-                        "task_id": t["task_id"],
-                        "title": t["title"],
-                        "builds": t["builds"],
-                        "blocked_by": t["blocked_by"],
-                        "verification": t["verification"],
-                        "is_ready": t["is_ready"],
-                        "is_completed": t["is_completed"],
-                        "status": t["status"],
-                    }
-                    for t in grp_tasks
-                ]
-                for grp, grp_tasks in data["parallel_groups"].items()
-            },
-            "subagent_dispatch_plan": data["subagent_dispatch_plan"],
-        }
-        emit(payload)
-        return 0
 
     print(f"Task DAG for `{data['change']}`:")
     print(f"  Summary: {data['total_tasks']} total | {data['completed_tasks']} completed | {data['ready_tasks']} ready | {data['blocked_tasks']} blocked\n")
@@ -268,20 +242,14 @@ def cmd_tasks(a):
                 print(f"              Verification: {t['verification']}")
         print()
 
-    if data["ready_tasks"] > 0 and data.get("structured"):
-        print("Ready to dispatch:")
-        for grp_plan in data["subagent_dispatch_plan"]:
-            for item in grp_plan["tasks"]:
-                print(f"  - {item['task_id']}: {item['title']} (Parallel Group: {grp_plan['parallel_group']})")
-    elif not data.get("structured"):
+    if not data.get("structured"):
         print("Plain checklist: no declared dependencies or verification commands.")
         print("Verification results belong in the record's Verification section;")
         print("use `## Task <id>: <title>` sections only when parallelism or blocking matters.")
-    else:
-        if data["completed_tasks"] == data["total_tasks"] and data["total_tasks"] > 0:
-            print("All tasks in DAG completed. Ready for verification & gate.")
-        else:
-            print("No tasks currently ready (check prerequisites or dependencies).")
+    elif data["completed_tasks"] == data["total_tasks"] and data["total_tasks"] > 0:
+        print("All tasks in DAG completed. Ready for verification & gate.")
+    elif data["ready_tasks"] == 0:
+        print("No tasks currently ready (check prerequisites or dependencies).")
     return 0
 
 def parser():
@@ -297,10 +265,10 @@ def parser():
     x=sp.add_parser('validate'); x.add_argument('change',nargs='?'); x.add_argument('--all',action='store_true'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_validate)
     x=sp.add_parser('verify'); x.add_argument('change'); x.add_argument('stage'); x.set_defaults(func=cmd_verify)
     x=sp.add_parser('sync'); x.add_argument('change'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_sync)
-    x=sp.add_parser('gate'); x.add_argument('change'); x.add_argument('target',choices=['implementation','merge','archive']); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_gate)
+    x=sp.add_parser('gate'); x.add_argument('change'); x.add_argument('target'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_gate)
     x=sp.add_parser('archive'); x.add_argument('change'); x.set_defaults(func=cmd_archive)
     x=sp.add_parser('ci'); x.add_argument('--base',required=True); x.set_defaults(func=cmd_ci)
-    x=sp.add_parser('tasks'); x.add_argument('change'); x.add_argument('--export-dag',action='store_true'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_tasks)
+    x=sp.add_parser('tasks'); x.add_argument('change'); x.add_argument('--json',action='store_true'); x.set_defaults(func=cmd_tasks)
     x=sp.add_parser('docs'); x.add_argument('action',choices=['install','dev','build']); x.set_defaults(func=cmd_docs)
     return p
 

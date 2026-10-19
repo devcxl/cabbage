@@ -2,8 +2,8 @@
 
 ## 默认：一份变更记录
 
-新项目的 `feature / bugfix / refactor` 使用 `change-record.md` 模板生成 `tasks.md`，
-阶段 ID 为 `implementation`。必需标题：
+新项目的 `change` 使用 `change-record.md` 模板生成 `tasks.md`，
+阶段 ID 为 `tasks`。必需标题：
 
 | 标题 | 内容 |
 | --- | --- |
@@ -23,13 +23,15 @@
 
 | 阶段 ID | 文件 | 新轻量流程必需标题 | 默认同步目录 |
 | --- | --- | --- | --- |
+| `design` | `tech-spec.md` | Context, Design, Failure Modes, Rollout | `docs/03-architecture/system-design/` |
+| `rfc` | `rfc.md` | Problem, Proposal, Alternatives | `docs/03-architecture/rfc/` |
 | `adr` | `adr.md` | Context, Decision, Consequences | `docs/03-architecture/adr/` |
 | `api` | `api-design.md` | Contract, Compatibility | `docs/05-api/` |
 | `database` | `database-design.md` | Schema, Migration, Rollback | `docs/04-domain/` |
 | `security` | `security-review.md` | Threats, Controls | `docs/09-security/` |
 | `release` | `release-plan.md` | Deployment, Rollback, Verification | `docs/12-release/` |
 
-这些阶段在新轻量流程中位于 `implementation` 之前。发布方案写待执行的步骤与验证方法，
+这些阶段在新轻量流程中位于 `tasks` 之前。发布方案写待执行的步骤与验证方法，
 不要提前宣称执行成功；真实结果记入变更记录。
 默认同步文件名为 `<change-id>.md`，不是自动分配 ADR 编号。
 
@@ -37,7 +39,8 @@
 
 原有 `prd.md`、`impact.md`、`tech-spec.md`、`test-plan.md`、`tasks.md`、RFC、事故与复盘
 模板继续保留。实际必需标题取自项目工作流的 `required_headings`，不是一份全局标题清单。
-旧项目默认流程不随 CLI 升级改变。
+旧项目默认流程不随 CLI 升级改变；新项目除 `incident` 外不再有独立专项工作流，
+高风险场景由 `change` + 影响标记组合表达。
 
 自定义工作流中某个阶段可省略 `template`；此时回退到通用 `generic.md`，它不预设该阶段的
 必需标题，必需标题仍由工作流的 `required_headings` 决定。
@@ -49,8 +52,7 @@
 `Builds`、`Blocked By`、`Parallel Group`、`Verification` 字段（字段名需完全匹配）。
 `Blocked By` 写任务 ID 或 `None`，多个用逗号分隔。
 
-`cabbage tasks <id>` 查看就绪与阻塞；`--export-dag` 输出派发数据，不调度执行任务。
-无结构化分节时 `--export-dag` 会报错而非伪造依赖，因为普通清单没有可派发的依赖信息。
+`cabbage tasks <id>` 查看就绪与阻塞；派发职责属于编排侧（Agent/插件），CLI 只读展示。
 
 ## 当前事实与历史
 

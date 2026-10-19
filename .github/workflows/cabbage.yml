@@ -1,6 +1,8 @@
 # Generated template for cabbage projects. If this project does not publish a
 # documentation site, delete the `deploy-pages` job (and the documentation steps
 # of `validate-and-test`); CI stays green because those steps are conditional.
+# The test step below runs Python's unittest when tests/ exists; adapt it to your
+# project's test runner so a missing test run is surfaced instead of silent.
 name: CI & Docs Deployment
 
 on:
@@ -50,7 +52,7 @@ jobs:
           if [ -d tests ]; then
             python -m unittest discover tests
           else
-            echo "No tests/ directory; skipping the test suite."
+            echo "::warning title=Test suite skipped::no tests/ directory found; adapt the Run Test Suite step to this project's test runner so the test stage actually runs."
           fi
 
       - name: Validate Cabbage Changes

@@ -17,17 +17,17 @@ cabbage verify payment-timeout-2026-08-29 incident
 # 2. 分析根因：填写 postmortem.md
 cabbage verify payment-timeout-2026-08-29 postmortem
 # 3. 落实预防措施：完成 tasks.md 清单
-cabbage verify payment-timeout-2026-08-29 implementation
+cabbage verify payment-timeout-2026-08-29 tasks
 cabbage gate payment-timeout-2026-08-29 merge
 cabbage archive payment-timeout-2026-08-29
 ```
 
-阶段 ID 以 `next` 输出为准：`incident` → `postmortem` → `implementation`。
+阶段 ID 以 `next` 输出为准：`incident` → `postmortem` → `tasks`。
 前两个阶段是事实与分析，第三个阶段是实际修复与预防措施。
 
 **分级降载**：正在处置的紧急故障不要为了走流程而拖延止血。
-紧急修复可以用 `cabbage new hotfix <id>` 走轻量路径，事后另行新建 `incident` 记录复盘。
-不要把两者混在同一个变更里。
+紧急修复可以用 `cabbage new change <id>` 走轻量路径（需要发布方案时声明 `deployment=true`），
+事后另行新建 `incident` 记录复盘。不要把两者混在同一个变更里。
 
 ## incident.md：先记事实
 
