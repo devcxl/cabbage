@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "completed": {
+    "requirement": {
+      "signature": "a8b7491ba10dff3ebe0a88348e07e970444ac9ffd08891564e35b311dea779b8",
+      "verified_at": "2026-11-09T18:42:25.158878+00:00",
+      "completed_at": "2026-11-09T18:42:25.158886+00:00"
+    },
+    "impact": {
+      "signature": "39fcae01e4ca2464b6639e5b20ec47effc233ad300a8a4ea20f412b7cd208b5c",
+      "verified_at": "2026-11-09T18:42:25.261506+00:00",
+      "completed_at": "2026-11-09T18:42:25.261516+00:00"
+    },
+    "design": {
+      "signature": "f457df86b10502459e58db7836ffc028d0df7d9346ffd0c6db5f4847c990e3ef",
+      "verified_at": "2026-11-09T18:42:25.372213+00:00",
+      "completed_at": "2026-11-09T18:42:25.372222+00:00"
+    },
+    "tests": {
+      "signature": "ed2958e198b99e1c28193b61e63956147eafda8c6c49847cd42edc14b32aa8b7",
+      "verified_at": "2026-11-09T18:42:25.491881+00:00",
+      "completed_at": "2026-11-09T18:42:25.491891+00:00"
+    },
+    "implementation": {
+      "signature": "0dba1a9403b8a9579d96ae78a7857516e763d6c407d46b8922cfe2a40e16505e",
+      "verified_at": "2026-11-09T18:42:25.620732+00:00",
+      "completed_at": "2026-11-09T18:42:25.620741+00:00"
+    },
+    "release": {
+      "signature": "68303a1dd314af6d1bd174535bcf5d339e8ab3929566c0fd1a37f88a8aa1e925",
+      "verified_at": "2026-11-09T18:42:25.762487+00:00",
+      "completed_at": "2026-11-09T18:42:25.762497+00:00"
+    }
+  }
+}
