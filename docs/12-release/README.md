@@ -1,6 +1,6 @@
 # 发布说明
 
-Cabbage 当前版本为 `0.1.2`。`.github/workflows/release-draft.yml` 在 `v*` 标签推送时运行测试、构建 Python 包和 Debian 包，并创建 GitHub 草稿 Release；不自动发布到公共 PyPI。
+Cabbage 当前版本为 `0.2.0`。`.github/workflows/release-draft.yml` 在 `v*` 标签推送时运行测试、构建 Python 包和 Debian 包，并创建 GitHub 草稿 Release；不自动发布到公共 PyPI。
 
 ## 发布物
 
@@ -16,7 +16,7 @@ Cabbage 当前版本为 `0.1.2`。`.github/workflows/release-draft.yml` 在 `v*`
 
 - Python：3.10 及以上。
 - 运行依赖：PyYAML 6.0 及以上。
-- 当前包版本与 `cabbage --version`：`0.1.2`。
+- 当前包版本与 `cabbage --version`：`0.2.0`。
 - 文档构建环境：Node.js 22、pnpm 10。
 
 ## 发布前检查
@@ -60,3 +60,7 @@ cabbage gate <change-id> merge
 ## 当前边界
 
 标签推送和草稿 Release 转正式发布仍需维护者决定；当前没有自动版本递增、制品签名或公共包仓库发布。不要把文档部署成功当作已发布新包版本。
+
+## 发布记录
+
+- [v0.2.0 发布说明（发布评审稿）](v0.2.0-release-notes.md)
