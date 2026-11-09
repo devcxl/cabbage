@@ -1,6 +1,6 @@
 # Maintainer: devcxl <devcxl@github.com>
 pkgname=cabbage-git
-pkgver=0.1.2
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="A spec-driven project documentation management skill & CLI for software teams and AI agents"
 arch=('any')

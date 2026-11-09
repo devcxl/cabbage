@@ -1,5 +1,10 @@
 # Cabbage 运行链路文档
 
+> **历史快照（非当前行为依据）**：本文整理于 2026-09-04（HEAD `f47be05`），
+> 描述当时的版本（`0.1.0`）和 8 类工作流结构。当前版本以 `cabbage_cli/__init__.py`
+> 和 `cabbage --version` 为准，当前工作流与目录结构见 `README.md` 和 `docs/`。
+> 保留原文用于对照，不要按本文的旧版本号或旧工作流清单操作。
+
 整理对象：`/home/devcxl/Projects/project-docs-management`（HEAD `f47be05`，2026-09-04）
 配套审计：`AUDIT.md`
 
